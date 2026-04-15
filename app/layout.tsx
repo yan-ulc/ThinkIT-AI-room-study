@@ -1,20 +1,13 @@
 import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
+import { SyncUser } from "@/components/providers/sync-user"; // Import ini
 import "./globals.css";
-import { JetBrains_Mono } from "next/font/google";
-import { cn } from "@/lib/utils";
 
-const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
-
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={cn("font-mono", jetbrainsMono.variable)}>
+    <html lang="en">
       <body>
         <ConvexClientProvider>
+          <SyncUser /> {/* Pasang di sini */}
           {children}
         </ConvexClientProvider>
       </body>

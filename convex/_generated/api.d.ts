@@ -8,13 +8,29 @@
  * @module
  */
 
+import type * as ai from "../ai.js";
+import type * as documents from "../documents.js";
+import type * as messages from "../messages.js";
+import type * as rag from "../rag.js";
+import type * as rag_node from "../rag_node.js";
+import type * as rooms from "../rooms.js";
+import type * as users from "../users.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  ai: typeof ai;
+  documents: typeof documents;
+  messages: typeof messages;
+  rag: typeof rag;
+  rag_node: typeof rag_node;
+  rooms: typeof rooms;
+  users: typeof users;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.
