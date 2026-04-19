@@ -98,3 +98,23 @@ export const list = query({
     return documents;
   },
 });
+
+export const remove = mutation({
+  args: { id: v.id("documents"), storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    // 1. Hapus metadata dari tabel documents
+    await ctx.db.delete(args.id);
+    // 2. Hapus file fisik dari Convex Storage
+    await ctx.storage.delete(args.storageId);
+    
+    // 3. (Optional) Hapus chunks terkait biar gak nyampah di vector search
+    const chunks = await ctx.db
+      .query("documentChunks")
+      .withIndex("by_documentId", (q) => q.eq("documentId", args.id))
+      .collect();
+    
+    for (const chunk of chunks) {
+      await ctx.db.delete(chunk._id);
+    }
+  },
+});

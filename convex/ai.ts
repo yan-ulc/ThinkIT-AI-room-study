@@ -13,46 +13,105 @@ function extractPrimaryText(data: any): string | null {
   return null;
 }
 
+function extractGeminiText(data: any): string | null {
+  if (typeof data?.candidates?.[0]?.content?.parts?.[0]?.text === "string") {
+    return data.candidates[0].content.parts[0].text;
+  }
+  return null;
+}
+
 export const chatWithAi = action({
   args: {
     roomId: v.id("rooms"),
     message: v.string(),
+    replyToId: v.optional(v.id("messages")), // Optional ID pesan yang di-reply
   },
   handler: async (ctx, args) => {
-    const chunks = await ctx.runAction(api.rag_node.searchRelevance, {
-      roomId: args.roomId,
-      query: args.message,
-    });
-    const context = chunks.join("\n\n");
+    let replyContext = "";
+    if (args.replyToId) {
+      const repliedMsg = await ctx.runQuery(api.messages.getById, {
+        id: args.replyToId,
+      });
+      if (repliedMsg) {
+        const sender = repliedMsg.senderName || "previous message";
+        const normalized = repliedMsg.content.replace(/\s+/g, " ").trim();
+        const snippet =
+          normalized.length > 180
+            ? `${normalized.slice(0, 180).trim()}...`
+            : normalized;
+        replyContext = `\nThe user is replying to ${sender}: "${snippet}".`;
+      }
+    }
 
-    const systemPrompt = `You are ThinkIT AI. Use the context to answer. 
-    Context: ${context}`;
+    // --- 1. AMBIL CONTEXT DARI PDF (RAG) ---
+    let chunks: string[] = [];
+    try {
+      // searchRelevance uses Gemini v1beta + text-embedding-004 (768 dims)
+      chunks = await ctx.runAction(api.rag_node.searchRelevance, {
+        roomId: args.roomId,
+        query: args.message,
+      });
+    } catch (error) {
+      console.error("RAG searchRelevance failed", error);
+    }
+    const context = chunks
+      .slice(0, 3)
+      .map((chunk) => chunk.trim())
+      .filter((chunk) => chunk.length > 0)
+      .join("\n\n");
+
+    // --- 2. AMBIL 10 CHAT TERAKHIR (BIAR GAK PIKUN) ---
+    // Kita panggil query buat ambil sejarah chat
+    const lastMessages: Array<{
+      type: "text" | "ai" | "system";
+      content: string;
+    }> = await ctx.runQuery(api.messages.getRecentMessages, {
+      roomId: args.roomId,
+      limit: 12,
+    });
+
+    // Query returns newest-first; prompt should be oldest-first.
+    const orderedHistory = [...lastMessages].reverse();
+
+    // Kita ubah formatnya jadi format yang AI ngerti (role: user/assistant)
+    const history = orderedHistory
+      .filter((m) => m.content.trim().length > 0)
+      .map((m) => ({
+        role: m.type === "ai" ? "assistant" : "user",
+        content: m.content,
+      }));
+
+    // --- 3. GABUNGIN SEMUANYA BUAT DIKIRIM KE AI ---
+    const aiMessages = [
+      {
+        role: "system",
+        content: `You are ThinkIT AI, a smart study assistant. 
+        Use the following document context to help answer, but prioritize a natural conversation.
+        DOC CONTEXT: ${context}${replyContext}`,
+      },
+      ...history, // Ini sejarah chat tadi
+      { role: "user", content: args.message }, // Ini pertanyaan terakhir user
+    ];
 
     let responseText = "";
-    const primaryUrl = process.env.DO_INFERENCE_URL;
-    const doApiKey = process.env.DO_API_KEY;
-    const geminiApiKey = process.env.GEMINI_API_KEY;
 
-    // --- 1. JALUR PRIMARY (DIGITALOCEAN) ---
+    // --- 4. KIRIM KE AI (GROQ / GEMINI) ---
     try {
-      if (!primaryUrl || !doApiKey) {
-        throw new Error("Missing DO_INFERENCE_URL or DO_API_KEY");
-      }
-
-      const response = await fetch(primaryUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${doApiKey}`,
-          "Content-Type": "application/json",
+      const response = await fetch(
+        process.env.GROQ_API_URL ??
+          "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: aiMessages, // <--- Sekarang kirim aiMessages (pake history)
+          }),
         },
-        body: JSON.stringify({
-          model: "llama-3-70b",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: args.message },
-          ],
-        }),
-      });
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -62,48 +121,35 @@ export const chatWithAi = action({
         }
         responseText = parsed;
       } else {
-        throw new Error(`DO API Error: ${response.status}`);
+        throw new Error("Groq Fail");
       }
-    } catch (error) {
-      console.error("Primary AI Failed, hitting Gemini Fallback...", error);
-
-      // --- 2. JALUR FALLBACK (GEMINI) ---
-      try {
-        if (!geminiApiKey) {
-          throw new Error("Missing GEMINI_API_KEY");
-        }
-
-        const geminiResp = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [{ text: `${systemPrompt}\n\nUser: ${args.message}` }],
-                },
-              ],
-            }),
-          },
-        );
-
-        const data = await geminiResp.json();
-
-        // VALIDASI RESPONSE GEMINI (Biar gak crash lagi di baris 57)
-        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-          responseText = data.candidates[0].content.parts[0].text;
-        } else {
-          console.error("Gemini Error Detail:", JSON.stringify(data));
-          responseText = "Duh, AI-nya lagi pusing Ngab. Coba lagi bentar ya.";
-        }
-      } catch (geminiErr) {
-        console.error("Gemini Critical Fail:", geminiErr);
-        responseText = "Koneksi ke otak AI terputus. Cek internet/API Key lu.";
+    } catch (err) {
+      // FALLBACK KE GEMINI JIKA DO GAGAL
+      const geminiResp = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: aiMessages.map((m) => ({
+              role: m.role === "assistant" ? "model" : "user",
+              parts: [{ text: m.content }],
+            })),
+          }),
+        },
+      );
+      const data = await geminiResp.json();
+      const parsed = extractGeminiText(data);
+      if (!parsed) {
+        console.error("Gemini unexpected response:", JSON.stringify(data));
+        responseText =
+          "AI lagi gangguan sementara. Coba kirim ulang sebentar lagi.";
+      } else {
+        responseText = parsed;
       }
     }
 
-    // 4. Save AI Response
+    // --- 5. SIMPAN JAWABAN AI ---
     await ctx.runMutation(internal.ai.storeAiMessage, {
       roomId: args.roomId,
       content: responseText,
@@ -116,10 +162,28 @@ export const storeAiMessage = internalMutation({
   handler: async (ctx, args) => {
     await ctx.db.insert("messages", {
       roomId: args.roomId,
-      senderId: null,
+      senderId: "ai",
+      senderName: "ThinkIT AI",
       content: args.content,
       type: "ai",
       mentionedUsers: [],
+      metadata: {
+        model: "llama-3.3-70b-versatile",
+      },
+    });
+  },
+});
+
+export const updateAiMessage = internalMutation({
+  args: {
+    messageId: v.id("messages"),
+    content: v.string(),
+    isDone: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.messageId, {
+      content: args.content,
+      // Kita bisa tambah field isTyping di schema buat handle UI
     });
   },
 });

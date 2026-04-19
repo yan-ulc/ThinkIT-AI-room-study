@@ -33,17 +33,29 @@ export default defineSchema({
   // 4. MESSAGES
   messages: defineTable({
     roomId: v.id("rooms"),
-    senderId: v.union(v.id("users"), v.null()), // null = AI
+    // Keep null temporarily for backward compatibility with existing AI records.
+    senderId: v.union(
+      v.id("users"),
+      v.literal("ai"),
+      v.literal("system"),
+      v.null(),
+    ),
+    senderName: v.optional(v.string()),
+    senderImage: v.optional(v.string()),
     content: v.string(),
     type: v.union(v.literal("text"), v.literal("ai"), v.literal("system")),
+    replyToId: v.optional(v.id("messages")),
     mentionedUsers: v.array(v.string()), // Simpan username atau ID untuk mention
     metadata: v.optional(
       v.object({
         model: v.optional(v.string()),
         tokens: v.optional(v.number()),
-      })
+        sources: v.optional(v.array(v.string())),
+      }),
     ),
-  }).index("by_roomId", ["roomId"]),
+  })
+    .index("by_roomId", ["roomId"])
+    .index("by_replyTo", ["replyToId"]),
 
   // 5. DOCUMENTS
   documents: defineTable({
@@ -65,7 +77,7 @@ export default defineSchema({
     .index("by_roomId", ["roomId"])
     .vectorIndex("by_embedding", {
       vectorField: "embedding",
-      dimensions: 1536, // Standar untuk model seperti OpenAI/Gemini
+      dimensions: 768, // text-embedding-004 output dimension
       filterFields: ["roomId"],
     }),
 });
