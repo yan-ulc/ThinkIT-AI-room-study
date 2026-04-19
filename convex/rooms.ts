@@ -243,6 +243,16 @@ export const joinById = mutation({
 export const getMembers = query({
   args: { roomId: v.id("rooms") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!currentUser) return [];
+
     const members = await ctx.db
       .query("roomMembers")
       .withIndex("by_roomId", (q) => q.eq("roomId", args.roomId))
@@ -257,10 +267,43 @@ export const getMembers = query({
           _id: user._id,
           displayName: user.displayName,
           role: m.role,
+          isMe: m.userId === currentUser._id,
         };
       }),
     );
 
     return hydratedMembers.filter((member) => member !== null);
+  },
+});
+
+// convex/rooms.ts
+
+export const leaveRoom = mutation({
+  args: { roomId: v.id("rooms") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Gak ada akses, login dulu Ngab!");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) throw new Error("User tidak ditemukan");
+
+    // Cari data membership-nya
+    const membership = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", args.roomId).eq("userId", user._id),
+      )
+      .unique();
+
+    if (!membership) throw new Error("Lu emang gak ada di room ini, Ngab");
+
+    // Hapus dari room
+    await ctx.db.delete(membership._id);
+
+    return { success: true };
   },
 });
