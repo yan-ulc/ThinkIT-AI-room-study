@@ -4,7 +4,7 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type RoomMessage = {
   _id: Id<"messages">;
@@ -13,6 +13,8 @@ export type RoomMessage = {
   content: string;
   type: "text" | "ai" | "system";
   replyToId?: Id<"messages">;
+  selectionId?: Id<"documentSelections">;
+  selectionText?: string;
   replyToSenderName?: string;
   replyToContent?: string;
   senderName?: string;
@@ -28,6 +30,19 @@ export type RoomMember = {
   isMe: boolean;
 };
 
+export type RoomDocument = Doc<"documents"> & {
+  previewContent?: string;
+};
+
+export type DocumentContext = {
+  type: "document";
+  roomId: Id<"rooms">;
+  docId: Id<"documents">;
+  selectionId: Id<"documentSelections">;
+  docName: string;
+  selectedText: string;
+} | null;
+
 export function useRoomData() {
   const params = useParams();
   const roomId = params.roomId as Id<"rooms">;
@@ -38,6 +53,7 @@ export function useRoomData() {
   const [deletingDocId, setDeletingDocId] = useState<Id<"documents"> | null>(
     null,
   );
+  const [documentContext, setDocumentContext] = useState<DocumentContext>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,13 +65,20 @@ export function useRoomData() {
     | RoomMessage[]
     | undefined;
   const docs = useQuery(api.documents.list, { roomId }) as
-    | Doc<"documents">[]
+    | RoomDocument[]
     | undefined;
 
   const sendMessage = useMutation(api.messages.send);
+  const markRoomRead = useMutation(api.rooms.markRoomRead);
   const generateUploadUrl = useMutation(api.documents.generateUploadUrl);
   const saveDoc = useMutation(api.documents.create);
   const removeDoc = useMutation(api.documents.remove);
+  const cancelSelection = useMutation(api.documents.cancelSelection);
+
+  useEffect(() => {
+    if (!roomId || messages === undefined) return;
+    void markRoomRead({ roomId });
+  }, [roomId, messages?.length, markRoomRead]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,13 +118,31 @@ export function useRoomData() {
 
     try {
       setDeletingDocId(id);
-      await removeDoc({ id, storageId });
+      await removeDoc({ id });
     } catch (err) {
       console.error(err);
       alert("Failed to delete document.");
     } finally {
       setDeletingDocId(null);
     }
+  };
+
+  const handleUseDocumentContext = (context: NonNullable<DocumentContext>) => {
+    if (documentContext?.selectionId) {
+      void cancelSelection({ selectionId: documentContext.selectionId });
+    }
+    setDocumentContext(context);
+  };
+
+  const clearDocumentContext = () => {
+    setDocumentContext(null);
+  };
+
+  const cancelDocumentContext = () => {
+    if (documentContext?.selectionId) {
+      void cancelSelection({ selectionId: documentContext.selectionId });
+    }
+    setDocumentContext(null);
   };
 
   return {
@@ -115,7 +156,11 @@ export function useRoomData() {
     setRightTab,
     fileInputRef,
     deletingDocId,
+    documentContext,
     handleUpload,
     handleDeleteDoc,
+    handleUseDocumentContext,
+    clearDocumentContext,
+    cancelDocumentContext,
   };
 }

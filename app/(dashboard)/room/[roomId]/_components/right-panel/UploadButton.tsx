@@ -1,7 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
+import { Upload } from "lucide-react";
 
 type UploadButtonProps = {
   onClick: () => void;
@@ -9,12 +8,13 @@ type UploadButtonProps = {
 
 export function UploadButton({ onClick }: UploadButtonProps) {
   return (
-    <Button
+    <button
+      type="button"
       onClick={onClick}
-      variant="outline"
-      className="w-full text-xs gap-2 border-primary text-primary hover:bg-primary-muted"
+      className="group flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-transparent px-3 py-2.5 text-[12px] font-medium text-text-3 transition-all hover:border-primary/50 hover:bg-primary/4 hover:text-primary"
     >
-      <FileText size={14} /> Upload Document
-    </Button>
+      <Upload size={13} className="transition-transform group-hover:-translate-y-0.5" />
+      Upload Document
+    </button>
   );
 }

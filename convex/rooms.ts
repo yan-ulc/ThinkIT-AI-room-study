@@ -44,6 +44,9 @@ export const create = mutation({
       roomId,
       userId: user._id,
       role: "admin",
+      unreadCount: 0,
+      mentionCount: 0,
+      lastReadAt: Date.now(),
     });
 
     return roomId;
@@ -78,6 +81,9 @@ export const join = mutation({
       roomId: args.roomId,
       userId: user._id,
       role: "member",
+      unreadCount: 0,
+      mentionCount: 0,
+      lastReadAt: Date.now(),
     });
   },
 });
@@ -102,10 +108,17 @@ export const getMyRooms = query({
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
 
-    // Join ke tabel rooms untuk ambil data lengkap
+    // Join ke tabel rooms + attach unread/mention counters for sidebar badges.
     const rooms = await Promise.all(
       memberships.map(async (m) => {
-        return await ctx.db.get(m.roomId);
+        const room = await ctx.db.get(m.roomId);
+        if (!room) return null;
+
+        return {
+          ...room,
+          unreadCount: m.unreadCount ?? 0,
+          mentionCount: m.mentionCount ?? 0,
+        };
       }),
     );
 
@@ -233,9 +246,44 @@ export const joinById = mutation({
       roomId: normalizedId,
       userId: user._id,
       role: "member",
+      unreadCount: 0,
+      mentionCount: 0,
+      lastReadAt: Date.now(),
     });
 
     return normalizedId;
+  },
+});
+
+export const markRoomRead = mutation({
+  args: { roomId: v.id("rooms") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) throw new Error("User not found");
+
+    const membership = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", args.roomId).eq("userId", user._id),
+      )
+      .unique();
+
+    if (!membership) throw new Error("Forbidden");
+
+    await ctx.db.patch(membership._id, {
+      unreadCount: 0,
+      mentionCount: 0,
+      lastReadAt: Date.now(),
+    });
+
+    return { ok: true };
   },
 });
 

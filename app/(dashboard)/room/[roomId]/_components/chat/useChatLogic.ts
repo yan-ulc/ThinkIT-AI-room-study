@@ -3,18 +3,21 @@
 import type { Id } from "@/convex/_generated/dataModel";
 import { useState } from "react";
 import { useAiStreaming } from "../../hooks/useAiStreaming";
-import type { RoomMessage } from "../../hooks/useRoomData";
+import type { DocumentContext, RoomMessage } from "../../hooks/useRoomData";
 
 type SendMessageFn = (args: {
   roomId: Id<"rooms">;
   content: string;
   replyToId?: Id<"messages">;
+  selectionId?: Id<"documentSelections">;
 }) => Promise<Id<"messages">>;
 
 export function useChatLogic(
   roomId: Id<"rooms">,
   messages: RoomMessage[] | undefined,
   sendMessage: SendMessageFn,
+  selectionContext: DocumentContext,
+  onClearSelectionContext: () => void,
 ) {
   const [content, setContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<RoomMessage | null>(null);
@@ -29,19 +32,37 @@ export function useChatLogic(
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    const trimmedContent = content.trim();
+    if (!trimmedContent) return;
 
-    const isAiMentioned = content.toLowerCase().includes("@ai");
-    const isReplyingToAi = replyingTo?.type === "ai";
+    let finalContent = trimmedContent;
+    let replyToId: Id<"messages"> | undefined = replyingTo?._id;
+    let selectionId: Id<"documentSelections"> | undefined;
+
+    if (selectionContext) {
+      const safeSelection = selectionContext.selectedText
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/"/g, "'");
+      finalContent = `📄 ${selectionContext.docName}\n\n"${safeSelection}"\n\n@ai ${trimmedContent}`;
+      replyToId = undefined;
+      selectionId = selectionContext.selectionId;
+    }
+
+    const isAiMentioned = finalContent.toLowerCase().includes("@ai");
     const userMessageId = await sendMessage({
       roomId,
-      content,
-      replyToId: replyingTo?._id,
+      content: finalContent,
+      replyToId,
+      selectionId,
     });
 
-    onUserMessageSent(isAiMentioned || isReplyingToAi, userMessageId);
+    onUserMessageSent(isAiMentioned, userMessageId);
     setContent("");
     setReplyingTo(null);
+    if (selectionContext) {
+      onClearSelectionContext();
+    }
   };
 
   const handleReplyFromMessage = (message: RoomMessage) => {

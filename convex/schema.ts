@@ -25,6 +25,9 @@ export default defineSchema({
     roomId: v.id("rooms"),
     userId: v.id("users"),
     role: v.union(v.literal("admin"), v.literal("member")),
+    unreadCount: v.optional(v.number()),
+    mentionCount: v.optional(v.number()),
+    lastReadAt: v.optional(v.number()),
   })
     .index("by_roomId", ["roomId"])
     .index("by_userId", ["userId"])
@@ -45,6 +48,7 @@ export default defineSchema({
     content: v.string(),
     type: v.union(v.literal("text"), v.literal("ai"), v.literal("system")),
     replyToId: v.optional(v.id("messages")),
+    selectionId: v.optional(v.id("documentSelections")),
     mentionedUsers: v.array(v.string()), // Simpan username atau ID untuk mention
     metadata: v.optional(
       v.object({
@@ -55,7 +59,8 @@ export default defineSchema({
     ),
   })
     .index("by_roomId", ["roomId"])
-    .index("by_replyTo", ["replyToId"]),
+    .index("by_replyTo", ["replyToId"])
+    .index("by_selectionId", ["selectionId"]),
 
   // 5. DOCUMENTS
   documents: defineTable({
@@ -65,6 +70,17 @@ export default defineSchema({
     storageId: v.id("_storage"), // Id internal Convex storage
     uploadedBy: v.id("users"),
   }).index("by_roomId", ["roomId"]),
+
+  documentSelections: defineTable({
+    roomId: v.id("rooms"),
+    documentId: v.id("documents"),
+    selectedBy: v.id("users"),
+    selectedText: v.string(),
+    status: v.union(v.literal("active"), v.literal("canceled")),
+  })
+    .index("by_roomId", ["roomId"])
+    .index("by_documentId", ["documentId"])
+    .index("by_room_and_user", ["roomId", "selectedBy"]),
 
   // 6. DOCUMENT CHUNKS - Persiapan RAG
   documentChunks: defineTable({
