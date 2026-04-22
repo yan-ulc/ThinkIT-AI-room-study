@@ -1,6 +1,9 @@
 import { v } from "convex/values";
 import { api } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
+
+const MIN_SELECTION_LENGTH = 10;
+const MAX_SELECTION_LENGTH = 900;
 
 // STEP 5.1 — Generate Upload URL (Built-in Convex Storage)
 // Digunakan frontend untuk mendapatkan "pintu" upload
@@ -51,9 +54,8 @@ export const create = mutation({
     });
 
     /**
-     * 🔥 CRITICAL STEP: RAG TRIGGER
-     * Kita jadwalkan Action 'ingestDocument' untuk jalan di background.
-     * Supaya user nggak nungguin proses ekstraksi teks yang lama.
+     * CRITICAL STEP: RAG TRIGGER
+     * Supaya user gk tunggu proses ekstraksi teks .
      */
     await ctx.scheduler.runAfter(0, api.rag_node.ingestDocument, {
       documentId: docId,
@@ -95,26 +97,154 @@ export const list = query({
       .withIndex("by_roomId", (q) => q.eq("roomId", args.roomId))
       .collect();
 
-    return documents;
+    return await Promise.all(
+      documents.map(async (doc) => {
+        const chunks = await ctx.db
+          .query("documentChunks")
+          .withIndex("by_documentId", (q) => q.eq("documentId", doc._id))
+          .take(24);
+
+        const previewContent = chunks
+          .map((chunk) => chunk.content)
+          .join("\n\n");
+
+        return {
+          ...doc,
+          previewContent,
+        };
+      }),
+    );
   },
 });
 
 export const remove = mutation({
-  args: { id: v.id("documents"), storageId: v.id("_storage") },
+  args: { id: v.id("documents") },
   handler: async (ctx, args) => {
-    // 1. Hapus metadata dari tabel documents
-    await ctx.db.delete(args.id);
-    // 2. Hapus file fisik dari Convex Storage
-    await ctx.storage.delete(args.storageId);
-    
-    // 3. (Optional) Hapus chunks terkait biar gak nyampah di vector search
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    const doc = await ctx.db.get(args.id);
+    if (!doc) throw new Error("Document not found");
+
+    const membership = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", doc.roomId).eq("userId", user._id),
+      )
+      .unique();
+    if (!membership) throw new Error("Akses ditolak: bukan member room ini!");
+
+    // (Optional) tighten further: only uploader or admin may delete
+    // if (doc.uploadedBy !== user._id && membership.role !== "admin") {
+    //   throw new Error("Hanya uploader atau admin yang boleh menghapus");
+    // }
+
+    // 1. Hapus chunks terkait dulu
     const chunks = await ctx.db
       .query("documentChunks")
       .withIndex("by_documentId", (q) => q.eq("documentId", args.id))
       .collect();
-    
+
     for (const chunk of chunks) {
       await ctx.db.delete(chunk._id);
     }
+
+    // 2. Hapus metadata
+    await ctx.db.delete(args.id);
+    // 3. Hapus file fisik — pakai storageId dari record, bukan dari client
+    await ctx.storage.delete(doc.storageId);
+  },
+});
+
+export const createSelection = mutation({
+  args: {
+    roomId: v.id("rooms"),
+    documentId: v.id("documents"),
+    selectedText: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    const membership = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", args.roomId).eq("userId", user._id),
+      )
+      .unique();
+    if (!membership) throw new Error("Forbidden: not a room member");
+
+    const document = await ctx.db.get(args.documentId);
+    if (!document || document.roomId !== args.roomId) {
+      throw new Error("Document not found in this room");
+    }
+
+    const normalizedText = args.selectedText.replace(/\s+/g, " ").trim();
+    if (normalizedText.length < MIN_SELECTION_LENGTH) {
+      throw new Error(
+        `Selection too short. Minimum ${MIN_SELECTION_LENGTH} characters required.`,
+      );
+    }
+    if (normalizedText.length > MAX_SELECTION_LENGTH) {
+      throw new Error(
+        `Selection too long (≈${normalizedText.length}). Reduce selection.`,
+      );
+    }
+
+    return await ctx.db.insert("documentSelections", {
+      roomId: args.roomId,
+      documentId: args.documentId,
+      selectedBy: user._id,
+      selectedText: normalizedText,
+      status: "active",
+    });
+  },
+});
+
+export const cancelSelection = mutation({
+  args: { selectionId: v.id("documentSelections") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    const selection = await ctx.db.get(args.selectionId);
+    if (!selection) return;
+    if (selection.selectedBy !== user._id) {
+      throw new Error("Forbidden: cannot cancel another user's selection");
+    }
+
+    await ctx.db.patch(args.selectionId, { status: "canceled" });
+  },
+});
+
+export const getSelectionById = internalQuery({
+  args: { selectionId: v.id("documentSelections") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.selectionId);
+  },
+});
+
+export const getByIdInternal = internalQuery({
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.documentId);
   },
 });

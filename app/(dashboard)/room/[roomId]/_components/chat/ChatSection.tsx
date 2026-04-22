@@ -2,7 +2,7 @@
 
 import type { Id } from "@/convex/_generated/dataModel";
 import { useAutoScroll } from "../../hooks/useAutoScroll";
-import type { RoomMessage } from "../../hooks/useRoomData";
+import type { DocumentContext, RoomMessage } from "../../hooks/useRoomData";
 import { ChatHeader } from "./ChatHeader";
 import { ChatInput } from "./ChatInput";
 import { MessageList } from "./MessageList";
@@ -16,7 +16,11 @@ type ChatSectionProps = {
     roomId: Id<"rooms">;
     content: string;
     replyToId?: Id<"messages">;
+    selectionId?: Id<"documentSelections">;
   }) => Promise<Id<"messages">>;
+  selectionContext: DocumentContext;
+  onClearSelectionContext: () => void;
+  onCancelSelectionContext: () => void;
 };
 
 export function ChatSection({
@@ -24,6 +28,9 @@ export function ChatSection({
   roomName,
   messages,
   sendMessage,
+  selectionContext,
+  onClearSelectionContext,
+  onCancelSelectionContext,
 }: ChatSectionProps) {
   const {
     content,
@@ -36,12 +43,18 @@ export function ChatSection({
     streamingAiId,
     getDisplayedMessageContent,
     shouldHidePendingAiMessage,
-  } = useChatLogic(roomId, messages, sendMessage);
+  } = useChatLogic(
+    roomId,
+    messages,
+    sendMessage,
+    selectionContext,
+    onClearSelectionContext,
+  );
 
   const { scrollRef, handleScroll } = useAutoScroll(messages, isAiThinking);
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col border-r border-border bg-white">
+    <section className="flex min-h-0 flex-1 flex-col border-r border-border bg-surface">
       <ChatHeader roomName={roomName} />
 
       <MessageList
@@ -62,6 +75,8 @@ export function ChatSection({
         roomName={roomName}
         replyingTo={replyingTo}
         setReplyingTo={setReplyingTo}
+        selectionContext={selectionContext}
+        onClearContext={onCancelSelectionContext}
       />
     </section>
   );

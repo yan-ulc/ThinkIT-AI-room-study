@@ -16,8 +16,12 @@ export default function RoomPage() {
     setRightTab,
     fileInputRef,
     deletingDocId,
+    documentContext,
     handleUpload,
     handleDeleteDoc,
+    handleUseDocumentContext,
+    clearDocumentContext,
+    cancelDocumentContext,
   } = useRoomData();
 
   if (!room || messages === undefined) {
@@ -31,6 +35,9 @@ export default function RoomPage() {
         roomName={room.name}
         messages={messages}
         sendMessage={sendMessage}
+        selectionContext={documentContext}
+        onClearSelectionContext={clearDocumentContext}
+        onCancelSelectionContext={cancelDocumentContext}
       />
 
       <RightPanel
@@ -43,6 +50,7 @@ export default function RoomPage() {
         deletingDocId={deletingDocId}
         onUpload={handleUpload}
         onDelete={handleDeleteDoc}
+        onUseDocumentContext={handleUseDocumentContext}
       />
     </div>
   );

@@ -20,16 +20,60 @@ function extractGeminiText(data: any): string | null {
   return null;
 }
 
+function extractDocumentSelection(message: string): {
+  docName: string;
+  selectedText: string;
+  userMessage: string;
+} | null {
+  const match = message.match(
+    /^📄\s*(.+?)\n\n"([\s\S]*?)"\n\n@ai\s*([\s\S]*)$/,
+  );
+  if (!match) return null;
+
+  return {
+    docName: match[1].trim(),
+    selectedText: match[2].trim(),
+    userMessage: match[3].trim(),
+  };
+}
+
 export const chatWithAi = action({
   args: {
     roomId: v.id("rooms"),
     message: v.string(),
     replyToId: v.optional(v.id("messages")), // Optional ID pesan yang di-reply
+    selectionId: v.optional(v.id("documentSelections")),
   },
   handler: async (ctx, args) => {
+    const extractedContext = extractDocumentSelection(args.message);
+    const explicitUserMessage = extractedContext?.userMessage ?? args.message;
+    const cleanedUserMessage = explicitUserMessage
+      .replace(/@ai\b/gi, "")
+      .trim();
+
+    let selectedText = extractedContext?.selectedText ?? "";
+    let selectedDocName = extractedContext?.docName ?? "";
+    if (args.selectionId) {
+      const selection = await ctx.runQuery(
+        internal.documents.getSelectionById,
+        {
+          selectionId: args.selectionId,
+        },
+      );
+
+      if (selection && selection.roomId === args.roomId) {
+        selectedText = selection.selectedText;
+
+        const doc = await ctx.runQuery(internal.documents.getByIdInternal, {
+          documentId: selection.documentId,
+        });
+        selectedDocName = doc?.name ?? selectedDocName;
+      }
+    }
+
     let replyContext = "";
     if (args.replyToId) {
-      const repliedMsg = await ctx.runQuery(api.messages.getById, {
+      const repliedMsg = await ctx.runQuery(internal.messages.getById, {
         id: args.replyToId,
       });
       if (repliedMsg) {
@@ -49,7 +93,7 @@ export const chatWithAi = action({
       // searchRelevance uses Gemini v1beta + text-embedding-004 (768 dims)
       chunks = await ctx.runAction(api.rag_node.searchRelevance, {
         roomId: args.roomId,
-        query: args.message,
+        query: `${cleanedUserMessage} ${selectedText}`.trim(),
       });
     } catch (error) {
       console.error("RAG searchRelevance failed", error);
@@ -65,7 +109,7 @@ export const chatWithAi = action({
     const lastMessages: Array<{
       type: "text" | "ai" | "system";
       content: string;
-    }> = await ctx.runQuery(api.messages.getRecentMessages, {
+    }> = await ctx.runQuery(internal.messages.getRecentMessages, {
       roomId: args.roomId,
       limit: 12,
     });
@@ -85,12 +129,23 @@ export const chatWithAi = action({
     const aiMessages = [
       {
         role: "system",
-        content: `You are ThinkIT AI, a smart study assistant. 
-        Use the following document context to help answer, but prioritize a natural conversation.
-        DOC CONTEXT: ${context}${replyContext}`,
+        content: `You are ThinkIT AI, a smart study assistant.
+Focus on selected text first, then retrieval context, then recent history.
+Explain clearly and simply.
+Do not go out of context unless truly necessary.
+
+PRIMARY SELECTED CONTEXT (highest priority):
+Document: ${selectedDocName || "N/A"}
+${selectedText || "No selected text provided."}
+
+RETRIEVAL CONTEXT (secondary):
+${context || "No retrieval context."}${replyContext}`,
       },
       ...history, // Ini sejarah chat tadi
-      { role: "user", content: args.message }, // Ini pertanyaan terakhir user
+      {
+        role: "user",
+        content: cleanedUserMessage || explicitUserMessage,
+      }, // Ini pertanyaan terakhir user
     ];
 
     let responseText = "";
@@ -171,6 +226,17 @@ export const storeAiMessage = internalMutation({
         model: "llama-3.3-70b-versatile",
       },
     });
+
+    const memberships = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_roomId", (q) => q.eq("roomId", args.roomId))
+      .collect();
+
+    for (const member of memberships) {
+      await ctx.db.patch(member._id, {
+        unreadCount: (member.unreadCount ?? 0) + 1,
+      });
+    }
   },
 });
 

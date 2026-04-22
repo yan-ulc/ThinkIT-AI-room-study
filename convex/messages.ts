@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { api } from "./_generated/api";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 
 // STEP 3.1 & 3.2 — Send & Save Message
 // convex/messages.ts
@@ -10,6 +10,7 @@ export const send = mutation({
     roomId: v.id("rooms"),
     content: v.string(),
     replyToId: v.optional(v.id("messages")),
+    selectionId: v.optional(v.id("documentSelections")),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -21,6 +22,51 @@ export const send = mutation({
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
       .unique();
     if (!user) throw new Error("User not found");
+
+    const room = await ctx.db.get(args.roomId);
+    if (!room) throw new Error("Room not found");
+
+    const membership = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", args.roomId).eq("userId", user._id),
+      )
+      .unique();
+
+    if (!membership) {
+      throw new Error("Forbidden: You are not a member of this room");
+    }
+
+    let validatedReplyToId: typeof args.replyToId = undefined;
+    let repliedMessage = null;
+    if (args.replyToId) {
+      repliedMessage = await ctx.db.get(args.replyToId);
+      if (!repliedMessage) {
+        throw new Error("Reply target message not found");
+      }
+      if (repliedMessage.roomId !== args.roomId) {
+        throw new Error("Reply target must be in the same room");
+      }
+      validatedReplyToId = args.replyToId;
+    }
+
+    let validatedSelectionId: typeof args.selectionId = undefined;
+    if (args.selectionId) {
+      const selection = await ctx.db.get(args.selectionId);
+      if (!selection) {
+        throw new Error("Document selection not found");
+      }
+      if (selection.roomId !== args.roomId) {
+        throw new Error("Document selection must be in the same room");
+      }
+      if (selection.selectedBy !== user._id) {
+        throw new Error("Forbidden: cannot use another user's selection");
+      }
+      if (selection.status !== "active") {
+        throw new Error("Document selection is not active");
+      }
+      validatedSelectionId = args.selectionId;
+    }
 
     // --- LOGIC MENTION LU (JANGAN DIUBAH) ---
     const mentionRegex = /@(\w+)/g;
@@ -45,34 +91,40 @@ export const send = mutation({
     }
     // --- END LOGIC MENTION ---
 
-    // Trigger AI as well when user replies directly to an AI message.
-    if (args.replyToId) {
-      const repliedMessage = await ctx.db.get(args.replyToId);
-      if (repliedMessage?.type === "ai") {
-        hasAiMention = true;
-        if (!mentionedUsers.includes("ai")) {
-          mentionedUsers.push("ai");
-        }
-      }
-    }
-
     // SIMPAN PESAN USER
     const messageId = await ctx.db.insert("messages", {
       roomId: args.roomId,
       content: args.content,
       senderId: user._id,
-      senderName:  user.username,
+      senderName: user.username,
       senderImage: user.imageUrl,
       type: "text",
       mentionedUsers: mentionedUsers,
-      replyToId: args.replyToId,
+      replyToId: validatedReplyToId,
+      selectionId: validatedSelectionId,
     });
+
+    const memberships = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_roomId", (q) => q.eq("roomId", args.roomId))
+      .collect();
+
+    for (const member of memberships) {
+      if (member.userId === user._id) continue;
+
+      const isMentioned = mentionedUsers.includes(member.userId);
+      await ctx.db.patch(member._id, {
+        unreadCount: (member.unreadCount ?? 0) + 1,
+        mentionCount: (member.mentionCount ?? 0) + (isMentioned ? 1 : 0),
+      });
+    }
 
     if (hasAiMention) {
       await ctx.scheduler.runAfter(0, api.ai.chatWithAi, {
         roomId: args.roomId,
         message: args.content,
-        replyToId: args.replyToId,
+        replyToId: validatedReplyToId,
+        selectionId: validatedSelectionId,
       });
     }
 
@@ -150,6 +202,10 @@ export const getMessages = query({
           replyToContent = repliedMessage.content;
         }
 
+        const selection = msg.selectionId
+          ? await ctx.db.get(msg.selectionId)
+          : null;
+
         return {
           ...msg,
           senderName: resolvedSenderName,
@@ -158,13 +214,14 @@ export const getMessages = query({
           isMine: isUserSender && senderId === user._id,
           replyToSenderName,
           replyToContent,
+          selectionText: selection?.selectedText,
         };
       }),
     );
   },
 });
 
-export const getRecentMessages = query({
+export const getRecentMessages = internalQuery({
   args: { roomId: v.id("rooms"), limit: v.number() },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -175,7 +232,7 @@ export const getRecentMessages = query({
   },
 });
 
-export const getById = query({
+export const getById = internalQuery({
   args: { id: v.id("messages") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
