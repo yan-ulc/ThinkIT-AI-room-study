@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { internalQuery, mutation, query } from "./_generated/server";
+import { internal } from "@/convex/_generated/api";
 
 // STEP 3.1 & 3.2 — Send & Save Message
 // convex/messages.ts
@@ -120,7 +121,7 @@ export const send = mutation({
     }
 
     if (hasAiMention) {
-      await ctx.scheduler.runAfter(0, api.ai.chatWithAi, {
+      await ctx.scheduler.runAfter(0, internal.ai.chatWithAi, {
         roomId: args.roomId,
         message: args.content,
         replyToId: validatedReplyToId,
