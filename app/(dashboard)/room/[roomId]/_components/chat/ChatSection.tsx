@@ -33,8 +33,6 @@ export function ChatSection({
   onCancelSelectionContext,
 }: ChatSectionProps) {
   const {
-    content,
-    setContent,
     replyingTo,
     setReplyingTo,
     handleSend,
@@ -69,9 +67,7 @@ export function ChatSection({
       />
 
       <ChatInput
-        content={content}
-        setContent={setContent}
-        onSubmit={handleSend}
+        onSubmitText={handleSend}
         roomName={roomName}
         replyingTo={replyingTo}
         setReplyingTo={setReplyingTo}

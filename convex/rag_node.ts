@@ -7,6 +7,8 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
 
+const ragInternal = internal.rag;
+
 type ChunkDebugSample = {
   id: Id<"documentChunks">;
   documentId: Id<"documents">;
@@ -107,7 +109,7 @@ export const ingestDocument = action({
       // Generate real embedding for this chunk
       const embedding = await generateEmbedding(chunk);
 
-      await ctx.runMutation((internal as any).rag.storeChunkInternal, {
+      await ctx.runMutation(ragInternal.storeChunkInternal, {
         documentId: args.documentId,
         roomId: args.roomId,
         content: chunk,
@@ -135,7 +137,7 @@ export const searchRelevance = action({
     const chunks: Array<string | null> = await Promise.all(
       results.map(async (res) => {
         const chunk: Doc<"documentChunks"> | null = await ctx.runQuery(
-          (internal as any).rag.getChunkById,
+          ragInternal.getChunkById,
           {
             id: res._id,
           },
@@ -154,7 +156,7 @@ export const debugRagPipeline = action({
   },
   handler: async (ctx, args): Promise<RagDebugResult> => {
     const storedChunks: ChunkDebugSample[] = await ctx.runQuery(
-      (internal as any).rag.getRoomChunksDebug,
+      ragInternal.getRoomChunksDebug,
       {
         roomId: args.roomId,
         limit: 5,
@@ -175,7 +177,7 @@ export const debugRagPipeline = action({
     const topHits: RagDebugHit[] = await Promise.all(
       vectorResults.map(async (res) => {
         const chunk: Doc<"documentChunks"> | null = await ctx.runQuery(
-          (internal as any).rag.getChunkById,
+          ragInternal.getChunkById,
           { id: res._id },
         );
         return {

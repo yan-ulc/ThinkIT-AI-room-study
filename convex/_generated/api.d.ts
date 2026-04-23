@@ -11,10 +11,13 @@
 import type * as ai from "../ai.js";
 import type * as documents from "../documents.js";
 import type * as messages from "../messages.js";
+import type * as quiz from "../quiz.js";
 import type * as rag from "../rag.js";
 import type * as rag_node from "../rag_node.js";
 import type * as rooms from "../rooms.js";
+import type * as summarize from "../summarize.js";
 import type * as users from "../users.js";
+import type * as utils from "../utils.js";
 
 import type {
   ApiFromModules,
@@ -26,10 +29,13 @@ declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   documents: typeof documents;
   messages: typeof messages;
+  quiz: typeof quiz;
   rag: typeof rag;
   rag_node: typeof rag_node;
   rooms: typeof rooms;
+  summarize: typeof summarize;
   users: typeof users;
+  utils: typeof utils;
 }>;
 
 /**

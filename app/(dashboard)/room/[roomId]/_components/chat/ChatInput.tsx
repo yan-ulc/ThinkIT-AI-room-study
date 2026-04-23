@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import type { Id } from "@/convex/_generated/dataModel";
 import { FileText, Send, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { RoomMessage } from "../../hooks/useRoomData";
 import { ReplyPreview } from "./replyPreview";
 
@@ -17,9 +17,7 @@ type SelectionContext = {
 } | null;
 
 type ChatInputProps = {
-  content: string;
-  setContent: (value: string) => void;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSubmitText: (text: string) => Promise<void>;
   roomName: string;
   replyingTo: RoomMessage | null;
   setReplyingTo: (value: RoomMessage | null) => void;
@@ -28,15 +26,14 @@ type ChatInputProps = {
 };
 
 export function ChatInput({
-  content,
-  setContent,
-  onSubmit,
+  onSubmitText,
   roomName,
   replyingTo,
   setReplyingTo,
   selectionContext,
   onClearContext,
 }: ChatInputProps) {
+  const [draft, setDraft] = useState("");
   const handleCancelReply = () => setReplyingTo(null);
   const replyingToLabel =
     replyingTo?.senderName ||
@@ -50,7 +47,19 @@ export function ChatInput({
     }
   }, [selectionContext]);
 
-  const isSubmitDisabled = !content.trim();
+  const isSubmitDisabled = !draft.trim();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitDisabled) return;
+
+    try {
+      await onSubmitText(draft);
+      setDraft("");
+    } catch {
+      // Keep draft so user can retry if send fails.
+    }
+  };
 
   return (
     <div className="shrink-0 border-t border-border bg-surface px-4 pt-3 pb-4">
@@ -64,7 +73,7 @@ export function ChatInput({
                 {selectionContext.docName}
               </span>
               <p className="truncate text-[12px] italic leading-snug text-text-3">
-                "{selectionContext.selectedText}"
+                &quot;{selectionContext.selectedText}&quot;
               </p>
             </div>
             <button
@@ -83,20 +92,14 @@ export function ChatInput({
 
         {/* Input form */}
         <form
-          onSubmit={onSubmit}
+          onSubmit={handleSubmit}
           className={`flex items-center gap-2 border border-border-strong bg-surface2 px-3 py-2 shadow-sm transition-all focus-within:border-primary focus-within:shadow-md
             ${hasTopPreview ? "rounded-b-xl border-t-0" : "rounded-xl"}`}
         >
           <input
             ref={inputRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && !isSubmitDisabled) {
-                e.preventDefault();
-                onSubmit(e as any);
-              }
-            }}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
             placeholder={
               replyingTo
                 ? `Reply to ${replyingToLabel}…`

@@ -1,5 +1,6 @@
 "use client";
 
+import { DocumentSummary } from "@/components/document/DocumentSummary";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
@@ -62,7 +63,10 @@ export function DocumentsTab({
           {docs === undefined ? (
             <div className="flex flex-col gap-1.5 pt-2">
               {[1, 2].map((i) => (
-                <div key={i} className="h-11 animate-pulse rounded-lg bg-muted" />
+                <div
+                  key={i}
+                  className="h-11 animate-pulse rounded-lg bg-muted"
+                />
               ))}
             </div>
           ) : docs.length === 0 ? (
@@ -70,7 +74,7 @@ export function DocumentsTab({
               <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface2">
                 <FileText size={15} className="text-text-3" />
               </div>
-              <p className="text-[12px] leading-snug text-text-3 max-w-[160px]">
+              <p className="text-[12px] leading-snug text-text-3 max-w-40">
                 No documents yet. Upload one to reference it in chat.
               </p>
             </div>
@@ -138,32 +142,38 @@ export function DocumentsTab({
             </div>
 
             {/* Modal body */}
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <DocumentPreview
-                doc={{
-                  _id: previewDoc._id,
-                  roomId,
-                  name: previewDoc.name,
-                  content: previewDoc.previewContent ?? "",
-                  fileUrl: previewDoc.fileUrl,
-                }}
-                onAskAi={async (selectedText) => {
-                  const selectionId = await createSelection({
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="h-[56vh] min-h-95 overflow-hidden">
+                <DocumentPreview
+                  doc={{
+                    _id: previewDoc._id,
                     roomId,
-                    documentId: previewDoc._id,
-                    selectedText,
-                  });
-                  onUseDocumentContext({
-                    type: "document",
-                    roomId,
-                    docId: previewDoc._id,
-                    docName: previewDoc.name,
-                    selectionId,
-                    selectedText,
-                  });
-                  setPreviewDoc(null);
-                }}
-              />
+                    name: previewDoc.name,
+                    content: previewDoc.previewContent ?? "",
+                    fileUrl: previewDoc.fileUrl,
+                  }}
+                  onAskAi={async (selectedText) => {
+                    const selectionId = await createSelection({
+                      roomId,
+                      documentId: previewDoc._id,
+                      selectedText,
+                    });
+                    onUseDocumentContext({
+                      type: "document",
+                      roomId,
+                      docId: previewDoc._id,
+                      docName: previewDoc.name,
+                      selectionId,
+                      selectedText,
+                    });
+                    setPreviewDoc(null);
+                  }}
+                />
+              </div>
+
+              <div className="mt-4 border-t border-border">
+                <DocumentSummary documentId={previewDoc._id} />
+              </div>
             </div>
           </div>
         </div>

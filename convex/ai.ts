@@ -1,21 +1,40 @@
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
-import { action, internalMutation } from "./_generated/server";
++import { internalAction, internalMutation } from "./_generated/server";
+import { Interactions } from "@google/genai";
+type PrimaryChoiceMessage = {
+  message?: { content?: unknown };
+  text?: unknown;
+};
 
-function extractPrimaryText(data: any): string | null {
+type PrimaryResponse = {
+  choices?: PrimaryChoiceMessage[];
+};
+
+type GeminiResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{ text?: unknown }>;
+    };
+  }>;
+};
+
+function extractPrimaryText(data: unknown): string | null {
+  const typed = data as PrimaryResponse;
   // Support common OpenAI-compatible shapes.
-  if (typeof data?.choices?.[0]?.message?.content === "string") {
-    return data.choices[0].message.content;
+  if (typeof typed?.choices?.[0]?.message?.content === "string") {
+    return typed.choices[0].message.content;
   }
-  if (typeof data?.choices?.[0]?.text === "string") {
-    return data.choices[0].text;
+  if (typeof typed?.choices?.[0]?.text === "string") {
+    return typed.choices[0].text;
   }
   return null;
 }
 
-function extractGeminiText(data: any): string | null {
-  if (typeof data?.candidates?.[0]?.content?.parts?.[0]?.text === "string") {
-    return data.candidates[0].content.parts[0].text;
+function extractGeminiText(data: unknown): string | null {
+  const typed = data as GeminiResponse;
+  if (typeof typed?.candidates?.[0]?.content?.parts?.[0]?.text === "string") {
+    return typed.candidates[0].content.parts[0].text;
   }
   return null;
 }
@@ -37,7 +56,7 @@ function extractDocumentSelection(message: string): {
   };
 }
 
-export const chatWithAi = action({
+export const chatWithAi = internalAction({
   args: {
     roomId: v.id("rooms"),
     message: v.string(),
@@ -178,7 +197,7 @@ ${context || "No retrieval context."}${replyContext}`,
       } else {
         throw new Error("Groq Fail");
       }
-    } catch (err) {
+    } catch {
       // FALLBACK KE GEMINI JIKA DO GAGAL
       const geminiResp = await fetch(
         `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,

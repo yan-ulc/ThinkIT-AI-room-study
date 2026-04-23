@@ -21,7 +21,7 @@ export default async function LandingPage() {
 
       <p className="text-[#6B6860] max-w-lg mb-8 text-lg font-light leading-relaxed">
         Bring your team, your documents, and your curiosity. An AI that actually
-        reads what you've uploaded.
+        reads what you&apos;ve uploaded.
       </p>
 
       <div className="flex gap-4 justify-center">

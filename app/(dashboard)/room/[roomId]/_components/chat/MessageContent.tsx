@@ -1,5 +1,6 @@
 "use client";
 
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -8,6 +9,11 @@ import remarkGfm from "remark-gfm";
 type MessageContentProps = {
   messageContent: string;
   isAi: boolean;
+};
+
+type MarkdownCodeProps = ComponentPropsWithoutRef<"code"> & {
+  className?: string;
+  children?: ReactNode;
 };
 
 export function MessageContent({ messageContent, isAi }: MessageContentProps) {
@@ -78,7 +84,7 @@ export function MessageContent({ messageContent, isAi }: MessageContentProps) {
           strong: ({ ...props }) => (
             <span className="font-semibold text-inherit" {...props} />
           ),
-          code: ({ className, children, ...props }: any) => {
+          code: ({ className, children, ...props }: MarkdownCodeProps) => {
             const match = /language-(\w+)/.exec(className || "");
             const code = String(children).replace(/\n$/, "");
 

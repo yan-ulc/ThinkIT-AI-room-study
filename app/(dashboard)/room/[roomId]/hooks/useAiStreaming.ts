@@ -13,18 +13,18 @@ export function useAiStreaming(messages: RoomMessage[] | undefined) {
   const [pendingAiAfterMessageId, setPendingAiAfterMessageId] =
     useState<Id<"messages"> | null>(null);
 
-  const aiAnimationTimeoutRef = useRef<number | null>(null);
-  const aiDelayTimeoutRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const delayTimeoutRef = useRef<number | null>(null);
   const knownAiMessageIdsRef = useRef<Set<string>>(new Set());
   const hasHydratedKnownAiRef = useRef(false);
 
   useEffect(() => {
     return () => {
-      if (aiAnimationTimeoutRef.current) {
-        window.clearTimeout(aiAnimationTimeoutRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
-      if (aiDelayTimeoutRef.current) {
-        window.clearTimeout(aiDelayTimeoutRef.current);
+      if (delayTimeoutRef.current) {
+        window.clearTimeout(delayTimeoutRef.current);
       }
     };
   }, []);
@@ -32,6 +32,7 @@ export function useAiStreaming(messages: RoomMessage[] | undefined) {
   useEffect(() => {
     if (!messages || messages.length === 0) return;
 
+    // Hydrate known AI messages (biar ga ke-stream ulang)
     if (!hasHydratedKnownAiRef.current) {
       for (const msg of messages) {
         if (msg.type === "ai") {
@@ -42,17 +43,13 @@ export function useAiStreaming(messages: RoomMessage[] | undefined) {
       return;
     }
 
-    if (!isAiThinking || !pendingAiAfterMessageId) {
-      return;
-    }
+    if (!isAiThinking || !pendingAiAfterMessageId) return;
 
     const triggerIndex = messages.findIndex(
       (msg) => msg._id === pendingAiAfterMessageId,
     );
 
-    if (triggerIndex === -1) {
-      return;
-    }
+    if (triggerIndex === -1) return;
 
     const incomingAi = messages
       .slice(triggerIndex + 1)
@@ -62,22 +59,22 @@ export function useAiStreaming(messages: RoomMessage[] | undefined) {
           !knownAiMessageIdsRef.current.has(String(msg._id)),
       );
 
-    if (!incomingAi) {
-      return;
+    if (!incomingAi) return;
+
+    // Clear previous animation
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (delayTimeoutRef.current) {
+      window.clearTimeout(delayTimeoutRef.current);
     }
 
-    if (aiAnimationTimeoutRef.current) {
-      window.clearTimeout(aiAnimationTimeoutRef.current);
-    }
-    if (aiDelayTimeoutRef.current) {
-      window.clearTimeout(aiDelayTimeoutRef.current);
-    }
+    const text = incomingAi.content;
 
-    const words = incomingAi.content.split(/\s+/).filter(Boolean);
-    const chunks = words.length > 40 ? 2 : 1;
-    const delayMs = Math.min(1500, Math.max(500, words.length * 35));
+    // ⚡ ultra fast start (hampir instant)
+    const delayMs = Math.min(250, text.length * 5);
 
-    aiDelayTimeoutRef.current = window.setTimeout(() => {
+    delayTimeoutRef.current = window.setTimeout(() => {
       setIsAiThinking(false);
       setPendingAiAfterMessageId(null);
       setStreamingAiId(incomingAi._id);
@@ -85,14 +82,29 @@ export function useAiStreaming(messages: RoomMessage[] | undefined) {
 
       knownAiMessageIdsRef.current.add(String(incomingAi._id));
 
+      // 🚀 kalau kepanjangan, skip animasi (biar ga nyiksa user)
+      if (text.length > 800) {
+        setStreamingAiText(text);
+        setStreamingAiId(null);
+        return;
+      }
+
       let index = 0;
+      const totalLength = text.length;
+
       const step = () => {
-        index = Math.min(words.length, index + chunks);
-        const nextText = words.slice(0, index).join(" ");
+        const progress = index / totalLength;
+
+        // ⚡ dynamic speed (cepat di awal, smooth di akhir)
+        const dynamicSpeed = 2 + 6 * (1 - progress);
+
+        index += dynamicSpeed;
+
+        const nextText = text.slice(0, Math.floor(index));
         setStreamingAiText(nextText);
 
-        if (index < words.length) {
-          aiAnimationTimeoutRef.current = window.setTimeout(step, 35);
+        if (index < totalLength) {
+          animationFrameRef.current = requestAnimationFrame(step);
           return;
         }
 
@@ -106,18 +118,22 @@ export function useAiStreaming(messages: RoomMessage[] | undefined) {
 
   useEffect(() => {
     if (!messages || messages.length === 0 || !isAiThinking) return;
-
-    if (!pendingAiAfterMessageId) {
-      return;
-    }
+    if (!pendingAiAfterMessageId) return;
 
     const latest = messages[messages.length - 1];
+
     if (
       latest.type === "ai" &&
       knownAiMessageIdsRef.current.has(String(latest._id))
     ) {
-      setIsAiThinking(false);
-      setPendingAiAfterMessageId(null);
+      const timeoutId = window.setTimeout(() => {
+        setIsAiThinking(false);
+        setPendingAiAfterMessageId(null);
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
     }
   }, [messages, isAiThinking, pendingAiAfterMessageId]);
 
