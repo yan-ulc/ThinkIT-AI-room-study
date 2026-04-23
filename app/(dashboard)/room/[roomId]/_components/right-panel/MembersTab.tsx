@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
@@ -27,7 +26,9 @@ export function MembersTab({ roomId, members }: MembersTabProps) {
   };
 
   const handleLeave = async () => {
-    const confirmed = window.confirm("Leave this room? You can rejoin with the invite code.");
+    const confirmed = window.confirm(
+      "Leave this room? You can rejoin with the invite code.",
+    );
     if (!confirmed) return;
     try {
       await leave({ roomId });
@@ -52,9 +53,10 @@ export function MembersTab({ roomId, members }: MembersTabProps) {
             type="button"
             onClick={handleCopy}
             className={`flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-all
-              ${copied
-                ? "bg-emerald-50 text-emerald-700"
-                : "text-text-3 hover:bg-surface hover:text-text"
+              ${
+                copied
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "text-text-3 hover:bg-surface hover:text-text"
               }`}
             title="Copy invite code"
           >
@@ -95,7 +97,9 @@ export function MembersTab({ roomId, members }: MembersTabProps) {
                   <p className="truncate text-[13px] font-medium text-text leading-tight">
                     {m.displayName}
                     {m.isMe && (
-                      <span className="ml-1 text-[10px] font-normal text-text-3">(you)</span>
+                      <span className="ml-1 text-[10px] font-normal text-text-3">
+                        (you)
+                      </span>
                     )}
                   </p>
                 </div>

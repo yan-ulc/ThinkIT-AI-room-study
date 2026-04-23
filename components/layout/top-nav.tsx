@@ -31,7 +31,6 @@ export function TopNav() {
   return (
     <header className="h-13 border-b border-border/60 bg-surface/95 backdrop-blur-sm px-4 md:px-8 sticky top-0 z-50">
       <div className="mx-auto flex h-full max-w-350 items-center justify-between">
-
         {/* Left: Logo + Nav */}
         <div className="flex items-center gap-7">
           <Link
@@ -43,7 +42,10 @@ export function TopNav() {
             <span className="tracking-[-0.01em]">ThinkIT</span>
           </Link>
 
-          <nav className="hidden items-center md:flex" aria-label="Main navigation">
+          <nav
+            className="hidden items-center md:flex"
+            aria-label="Main navigation"
+          >
             {/* Subtle vertical divider before nav */}
             <span className="mr-5 h-4 w-px bg-border/80" aria-hidden />
 
@@ -56,15 +58,13 @@ export function TopNav() {
                     href={item.href}
                     className={cn(
                       "relative rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors duration-150",
-                      isActive
-                        ? "text-primary"
-                        : "text-text-2 hover:text-text",
+                      isActive ? "text-primary" : "text-text-2 hover:text-text",
                     )}
                   >
                     {/* Active underline instead of bg pill — more editorial, less tab-like */}
                     {isActive && (
                       <span
-                        className="absolute inset-x-3 -bottom-[1px] h-[1.5px] rounded-full bg-primary"
+                        className="absolute inset-x-3 -bottom-px h-[1.5px] rounded-full bg-primary"
                         aria-hidden
                       />
                     )}

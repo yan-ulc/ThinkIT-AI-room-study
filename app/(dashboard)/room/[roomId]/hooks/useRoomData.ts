@@ -78,7 +78,7 @@ export function useRoomData() {
   useEffect(() => {
     if (!roomId || messages === undefined) return;
     void markRoomRead({ roomId });
-  }, [roomId, messages?.length, markRoomRead]);
+  }, [roomId, messages, markRoomRead]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

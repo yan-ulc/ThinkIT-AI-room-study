@@ -62,6 +62,7 @@ export function MessageItem({
           {/* Avatar */}
           <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-border bg-muted shadow-sm">
             {msg.senderImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={msg.senderImage}
                 alt={msg.senderName || "User avatar"}
@@ -121,7 +122,7 @@ export function MessageItem({
                 ? "rounded-tl-sm border-border bg-primary text-primary-foreground"
                 : isMine
                   ? "rounded-tr-sm border-primary/20 bg-secondary-foreground text-text " //aslinya text-text
-                  : "rounded-tl-sm border-primary/20 bg-primary/80 text-primary-foreground"
+                  : "rounded-tl-sm border-primary/20 bg-primary text-primary-foreground"
             }`}
           >
             <MessageContent messageContent={displayedContent} isAi={isAi} />

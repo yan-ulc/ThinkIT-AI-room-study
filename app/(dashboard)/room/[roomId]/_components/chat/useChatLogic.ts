@@ -19,7 +19,6 @@ export function useChatLogic(
   selectionContext: DocumentContext,
   onClearSelectionContext: () => void,
 ) {
-  const [content, setContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<RoomMessage | null>(null);
 
   const {
@@ -30,9 +29,8 @@ export function useChatLogic(
     shouldHidePendingAiMessage,
   } = useAiStreaming(messages);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmedContent = content.trim();
+  const handleSend = async (inputText: string) => {
+    const trimmedContent = inputText.trim();
     if (!trimmedContent) return;
 
     let finalContent = trimmedContent;
@@ -58,7 +56,6 @@ export function useChatLogic(
     });
 
     onUserMessageSent(isAiMentioned, userMessageId);
-    setContent("");
     setReplyingTo(null);
     if (selectionContext) {
       onClearSelectionContext();
@@ -71,8 +68,6 @@ export function useChatLogic(
   };
 
   return {
-    content,
-    setContent,
     replyingTo,
     setReplyingTo,
     handleSend,

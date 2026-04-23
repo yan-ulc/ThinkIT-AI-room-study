@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { ChatSection } from "./_components/chat/ChatSection";
 import { RightPanel } from "./_components/right-panel/RightPanel";
 import { useRoomData } from "./hooks/useRoomData";
@@ -25,7 +26,14 @@ export default function RoomPage() {
   } = useRoomData();
 
   if (!room || messages === undefined) {
-    return <div className="p-10">Loading...</div>;
+    return (
+      <div className="flex h-full w-full flex-1 items-center justify-center bg-surface">
+        <div className="flex items-center gap-2 text-text-3">
+          <Loader2 size={18} className="animate-spin" />
+          <span className="text-sm font-medium">Loading room...</span>
+        </div>
+      </div>
+    );
   }
 
   return (

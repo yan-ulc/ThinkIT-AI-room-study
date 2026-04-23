@@ -96,4 +96,34 @@ export default defineSchema({
       dimensions: 768, // text-embedding-004 output dimension
       filterFields: ["roomId"],
     }),
+
+    summaries: defineTable({
+    documentId: v.id("documents"),
+    summaryText: v.string(),
+    keyPoints: v.array(v.string()),
+    userId: v.string(), // Clerk ID
+  }).index("by_documentId", ["documentId"]),
+
+  quizzes: defineTable({
+    documentId: v.id("documents"),
+    questions: v.array(
+      v.object({
+        question: v.string(),
+        options: v.array(v.string()),
+        answer: v.string(),
+      })
+    ),
+    userId: v.string(),
+  }).index("by_documentId", ["documentId"]),
+
+  // Tambahkan di schema.ts
+quizSubmissions: defineTable({
+  documentId: v.id("documents"),
+  quizId: v.id("quizzes"),
+  userId: v.string(),
+  score: v.number(),
+  answers: v.array(v.string()), // Jawaban yang dipilih user
+  createdAt: v.number(),
+}).index("by_user_doc", ["userId", "documentId"]),  
 });
+

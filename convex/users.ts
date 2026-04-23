@@ -1,4 +1,3 @@
-import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 export const storeUser = mutation({
@@ -18,14 +17,21 @@ export const storeUser = mutation({
     // Mapping data dari Clerk ke Schema kita
     const userData = {
       clerkId: identity.subject,
-      username: identity.nickname ?? identity.email?.split("@")[0] ?? "user_" + identity.subject.slice(-4),
+      username:
+        identity.nickname ??
+        identity.email?.split("@")[0] ??
+        "user_" + identity.subject.slice(-4),
       displayName: identity.name ?? "Anonymous",
       imageUrl: identity.pictureUrl,
     };
 
     if (user !== null) {
       // Jika user sudah ada, update datanya kalau ada yang berubah
-      if (user.username !== userData.username || user.displayName !== userData.displayName || user.imageUrl !== userData.imageUrl) {
+      if (
+        user.username !== userData.username ||
+        user.displayName !== userData.displayName ||
+        user.imageUrl !== userData.imageUrl
+      ) {
         await ctx.db.patch(user._id, userData);
       }
       return user._id;

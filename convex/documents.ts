@@ -117,6 +117,38 @@ export const list = query({
   },
 });
 
+export const getChunks = query({
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) return [];
+
+    const document = await ctx.db.get(args.documentId);
+    if (!document) return [];
+
+    const membership = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", document.roomId).eq("userId", user._id),
+      )
+      .unique();
+    if (!membership) return [];
+
+    const chunks = await ctx.db
+      .query("documentChunks")
+      .withIndex("by_documentId", (q) => q.eq("documentId", args.documentId))
+      .take(200);
+
+    return chunks.map((chunk) => ({ text: chunk.content }));
+  },
+});
+
 export const remove = mutation({
   args: { id: v.id("documents") },
   handler: async (ctx, args) => {
