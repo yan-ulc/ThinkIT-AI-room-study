@@ -2,7 +2,11 @@
 
 import type { Id } from "@/convex/_generated/dataModel";
 import { useAutoScroll } from "../../hooks/useAutoScroll";
-import type { DocumentContext, RoomMessage } from "../../hooks/useRoomData";
+import type {
+  DocumentContext,
+  RoomMember,
+  RoomMessage,
+} from "../../hooks/useRoomData";
 import { ChatHeader } from "./ChatHeader";
 import { ChatInput } from "./ChatInput";
 import { MessageList } from "./MessageList";
@@ -11,6 +15,7 @@ import { useChatLogic } from "./useChatLogic";
 type ChatSectionProps = {
   roomId: Id<"rooms">;
   roomName: string;
+  members?: RoomMember[];
   messages: RoomMessage[];
   sendMessage: (args: {
     roomId: Id<"rooms">;
@@ -26,6 +31,7 @@ type ChatSectionProps = {
 export function ChatSection({
   roomId,
   roomName,
+  members,
   messages,
   sendMessage,
   selectionContext,
@@ -52,8 +58,8 @@ export function ChatSection({
   const { scrollRef, handleScroll } = useAutoScroll(messages, isAiThinking);
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col border-r border-border bg-surface">
-      <ChatHeader roomName={roomName} />
+    <section className="relative flex min-h-0 flex-1 flex-col border-r border-border/70 bg-transparent">
+      <ChatHeader roomName={roomName} members={members} />
 
       <MessageList
         messages={messages}

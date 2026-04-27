@@ -193,7 +193,7 @@ export default function DashboardPage() {
               <article
                 key={room._id}
                 onClick={() => router.push(`/room/${room._id}`)}
-                className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-white/15 dark:bg-white/[0.035] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.025),0_10px_28px_rgba(0,0,0,0.33)] dark:hover:border-primary/35"
+                className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-sm transition-colors hover:shadow-md dark:border-white/15 dark:bg-white/[0.035] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.025),0_10px_28px_rgba(0,0,0,0.33)] dark:hover:border-primary/35"
               >
                 {/* Live badge */}
                 {room.active && (
@@ -263,7 +263,7 @@ export default function DashboardPage() {
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button
             onClick={() => setIsCreateOpen(true)}
-            className="group flex items-center gap-4 rounded-2xl border-2 border-dashed border-border bg-surface px-5 py-4 text-left transition-all hover:border-primary/50 hover:bg-primary/4 dark:border-white/20 dark:bg-white/[0.035] dark:hover:border-primary/45 dark:hover:bg-primary/10"
+            className="group flex items-center gap-4 rounded-2xl border-2 border-dashed border-border bg-surface px-5 py-4 text-left transition-colors hover:border-primary/50 hover:bg-primary/4 dark:border-white/20 dark:bg-white/[0.035] dark:hover:border-primary/45 dark:hover:bg-primary/10"
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface2 transition-colors group-hover:border-primary/30 group-hover:bg-primary/8">
               <Plus
@@ -283,7 +283,7 @@ export default function DashboardPage() {
 
           <button
             onClick={() => setIsJoinOpen(true)}
-            className="group flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 text-left transition-all hover:border-border-strong hover:shadow-sm dark:border-white/15 dark:bg-white/[0.035] dark:hover:border-white/30"
+            className="group flex items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 text-left transition-colors hover:border-border-strong hover:shadow-sm dark:border-white/15 dark:bg-white/[0.035] dark:hover:border-white/30"
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface2">
               <Hash size={18} className="text-text-3" />

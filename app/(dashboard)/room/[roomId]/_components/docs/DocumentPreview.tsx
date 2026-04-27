@@ -1,5 +1,5 @@
 "use client";
-import { QuizModal } from "@/components/quiz/QuizModal";
+import { QuizGenerateDialog } from "@/components/quiz/QuizGenerateDialog";
 import type { Id } from "@/convex/_generated/dataModel";
 import { AlertCircle, Brain, MousePointer2, X } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -27,15 +27,25 @@ type DocumentPreviewProps = {
     fileUrl?: string;
   };
   onAskAi: (selectedText: string) => Promise<void>;
+  isGeneratingQuiz: boolean; // is THIS doc generating?
+  isAnyQuizGenerating: boolean; // is any doc generating (block all buttons)?
+  onGenerateQuiz: (title?: string, questionCount?: number) => void; // trigger from parent
 };
 
-export function DocumentPreview({ doc, onAskAi }: DocumentPreviewProps) {
+export function DocumentPreview({
+  doc,
+  onAskAi,
+  isGeneratingQuiz,
+  isAnyQuizGenerating,
+  onGenerateQuiz,
+}: DocumentPreviewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<SelectionState | null>(null);
   const [contextAdded, setContextAdded] = useState(false);
   const [numPages, setNumPages] = useState(0);
   const [pageWidth, setPageWidth] = useState(900);
   const [isPdfReady, setIsPdfReady] = useState(false);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
 
   const isPdfFile =
     doc.name.toLowerCase().endsWith(".pdf") && Boolean(doc.fileUrl);
@@ -111,17 +121,15 @@ export function DocumentPreview({ doc, onAskAi }: DocumentPreviewProps) {
   };
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-[var(--background)]">
+    <div className="relative flex h-full min-h-0 flex-col bg-background">
       {/* ── Toolbar ── */}
-      <header className="z-10 flex shrink-0 items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--card)]/80 px-5 py-3 backdrop-blur-md">
-        <div className="flex items-center gap-2 text-[var(--muted-foreground)]">
+      <header className="z-10 flex shrink-0 items-center justify-between gap-4 border-b border-border bg-card/80 px-5 py-3 backdrop-blur-md">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <MousePointer2 size={13} className="shrink-0" />
           <p className="text-[12px] leading-none">
             Highlight text, then click{" "}
-            <span className="font-semibold text-[var(--foreground)]">
-              Ask AI
-            </span>{" "}
-            to reference it in chat.
+            <span className="font-semibold text-foreground">Ask AI</span> to
+            reference it in chat.
           </p>
         </div>
 
@@ -136,19 +144,51 @@ export function DocumentPreview({ doc, onAskAi }: DocumentPreviewProps) {
               Context added
             </span>
           )}
-          <QuizModal documentId={doc._id} />
+          <button
+            onClick={() => setShowGenerateDialog(true)}
+            disabled={isAnyQuizGenerating}
+            title={
+              isAnyQuizGenerating && !isGeneratingQuiz
+                ? "Quiz sedang digenerate untuk dokumen lain"
+                : "Generate Quiz"
+            }
+            className="flex items-center gap-2 rounded-xl bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isGeneratingQuiz ? (
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary-foreground border-r-transparent" />
+            ) : (
+              <Brain size={13} />
+            )}
+            {isGeneratingQuiz
+              ? "Generating..."
+              : isAnyQuizGenerating
+                ? "Quiz in progress..."
+                : "Generate Quiz"}
+          </button>
+
+          {/* Dialog hanya dirender saat dibutuhkan */}
+          <QuizGenerateDialog
+            isOpen={showGenerateDialog}
+            defaultTitle={doc.name.replace(/\.[^.]+$/, "")}
+            onClose={() => setShowGenerateDialog(false)}
+            isGenerating={isGeneratingQuiz}
+            onConfirm={(title, questionCount) => {
+              setShowGenerateDialog(false);
+              onGenerateQuiz(title, questionCount);
+            }}
+          />
         </div>
       </header>
 
       {/* ── Scrollable document body ── */}
       <main
         ref={contentRef}
-        className="min-h-0 flex-1 overflow-y-auto p-6 selection:bg-[var(--primary)]/15"
+        className="min-h-0 flex-1 overflow-y-auto p-6 selection:bg-primary/15"
         onMouseUp={handleMouseUp}
         aria-label="Document content"
       >
         {isPdfFile ? (
-          <div className="mx-auto w-full max-w-4xl rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+          <div className="mx-auto w-full max-w-4xl rounded-2xl border border-border bg-card p-4 shadow-sm">
             {isPdfReady ? (
               <PDFDocument
                 file={doc.fileUrl}
@@ -167,7 +207,7 @@ export function DocumentPreview({ doc, onAskAi }: DocumentPreviewProps) {
                   {Array.from({ length: numPages }, (_, i) => (
                     <div
                       key={`page-${i + 1}`}
-                      className="mx-auto w-fit overflow-hidden rounded-xl border border-[var(--border)] shadow-sm"
+                      className="mx-auto w-fit overflow-hidden rounded-xl border border-border shadow-sm"
                     >
                       <PDFPage
                         pageNumber={i + 1}
@@ -184,9 +224,9 @@ export function DocumentPreview({ doc, onAskAi }: DocumentPreviewProps) {
             )}
           </div>
         ) : (
-          <article className="mx-auto w-full max-w-3xl rounded-2xl border border-[var(--border)] bg-[var(--card)] px-8 py-8 font-serif text-[15px] leading-[1.85] text-[var(--foreground)] shadow-sm">
+          <article className="mx-auto w-full max-w-3xl rounded-2xl border border-border bg-card px-8 py-8 font-serif text-[15px] leading-[1.85] text-foreground shadow-sm">
             {doc.content || (
-              <span className="italic text-[var(--muted-foreground)]">
+              <span className="italic text-muted-foreground">
                 No preview text available for this document.
               </span>
             )}
@@ -204,24 +244,24 @@ export function DocumentPreview({ doc, onAskAi }: DocumentPreviewProps) {
         >
           {/* Validation warnings */}
           {isTooLong && (
-            <div className="flex items-start gap-2 rounded-xl border border-[var(--destructive)]/20 bg-[var(--destructive)]/8 px-3 py-2.5 text-[12px] text-[var(--destructive)] shadow-sm backdrop-blur-sm">
+            <div className="flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/8 px-3 py-2.5 text-[12px] text-destructive shadow-sm backdrop-blur-sm">
               <AlertCircle size={14} className="mt-0.5 shrink-0" />
               <span>Selection too long (~{len} chars). Select less text.</span>
             </div>
           )}
 
           {/* Card */}
-          <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]/95 shadow-xl shadow-black/10 backdrop-blur-md ring-1 ring-black/5">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card/95 shadow-xl shadow-black/10 backdrop-blur-md ring-1 ring-black/5">
             {/* Preview strip */}
-            <div className="flex items-start justify-between gap-2 border-b border-[var(--border)] bg-[var(--muted)]/50 px-4 py-3">
-              <p className="line-clamp-2 text-[11px] italic leading-relaxed text-[var(--muted-foreground)]">
+            <div className="flex items-start justify-between gap-2 border-b border-border bg-muted/50 px-4 py-3">
+              <p className="line-clamp-2 text-[11px] italic leading-relaxed text-muted-foreground">
                 &quot;{selection.text.slice(0, 120)}
                 {selection.text.length > 120 ? "…" : ""}&quot;
               </p>
               <button
                 type="button"
                 onClick={() => setSelection(null)}
-                className="shrink-0 rounded-md p-0.5 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
+                className="shrink-0 rounded-md p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 aria-label="Dismiss"
               >
                 <X size={13} />
@@ -233,21 +273,21 @@ export function DocumentPreview({ doc, onAskAi }: DocumentPreviewProps) {
                 type="button"
                 onClick={handleAskAi}
                 disabled={!canAsk}
-                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-4 py-2.5
-                  text-[13px] font-semibold text-[var(--primary-foreground)]
-                  transition-all duration-150
-                  hover:scale-[1.02] hover:brightness-110 active:scale-[0.98]
-                  disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5
+                  text-[13px] font-semibold text-primary-foreground
+                  transition-colors duration-150
+                  hover:bg-primary/90
+                  disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Brain
                   size={15}
-                  className="transition-transform duration-150 group-hover:rotate-6"
+                  className="transition-opacity duration-150 group-hover:opacity-90"
                 />
                 Ask AI about this
               </button>
 
               {isTooShort && (
-                <p className="mt-2 flex items-center gap-1.5 text-[11px] text-[var(--muted-foreground)]">
+                <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <AlertCircle size={11} />
                   Select at least {MIN_SELECTION_LENGTH} characters.
                 </p>
@@ -272,8 +312,8 @@ function PdfStateMessage({
     <div
       className={`rounded-xl px-4 py-3 text-[13px] ${
         variant === "error"
-          ? "border border-[var(--destructive)]/20 bg-[var(--destructive)]/8 text-[var(--destructive)]"
-          : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+          ? "border border-destructive/20 bg-destructive/8 text-destructive"
+          : "bg-muted text-muted-foreground"
       }`}
     >
       {children}

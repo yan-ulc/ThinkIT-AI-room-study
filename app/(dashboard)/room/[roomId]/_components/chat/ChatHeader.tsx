@@ -2,25 +2,59 @@
 
 type ChatHeaderProps = {
   roomName: string;
+  members?: Array<{
+    _id: string;
+    displayName: string;
+    imageUrl?: string;
+  }>;
 };
 
-export function ChatHeader({ roomName }: ChatHeaderProps) {
+export function ChatHeader({ roomName, members = [] }: ChatHeaderProps) {
+  const onlineMembers = members.slice(0, 3);
+  const remainingCount = Math.max(0, members.length - onlineMembers.length);
+
   return (
-    <header className="h-14 shrink-0 flex items-center border-b border-border bg-surface px-6">
-      <div className="flex items-center gap-3">
-        <div className="relative flex items-center justify-center">
-          <div className="w-2 h-2 rounded-full bg-primary" />
-          <div className="absolute w-2 h-2 rounded-full bg-primary/30 animate-ping" />
+    <header className="glass-panel shrink-0 border-b border-border/60 px-5 py-3.5 rounded-b-xl" >
+     <div className="flex items-center justify-between">
+  {/* LEFT */}
+  <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-px">
+      <h3 className="text-[13.5px] font-semibold tracking-tight text-text-1 leading-none">
+        {roomName}
+      </h3>
+      <span className="text-[10px] uppercase tracking-widest font-medium text-text-3 leading-none mt-1">
+        Discussion Room
+      </span>
+    </div>
+  </div>
+
+  {/* RIGHT */}
+  <div className="flex items-center gap-3">
+    {/* AVATAR */}
+    <div className="flex -space-x-2">
+      {onlineMembers.map((member) => (
+        <div
+          key={member._id}
+          title={member.displayName}
+          className="h-8 w-8 overflow-hidden rounded-full border border-border bg-muted shadow-sm"
+        >
+          {member.imageUrl ? (
+            <img
+              src={member.imageUrl}
+              alt={member.displayName}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-muted-foreground">
+              {member.displayName[0]?.toUpperCase() ?? "U"}
+            </div>
+          )}
         </div>
-        <div className="flex flex-col">
-          <h3 className="text-[13px] font-semibold tracking-tight text-text leading-none">
-            {roomName}
-          </h3>
-          <span className="text-[10px] text-text-3 mt-0.5 tracking-wide uppercase font-medium">
-            Discussion Room
-          </span>
-        </div>
-      </div>
+      ))}
+    </div>
+
+  </div>
+</div>
     </header>
   );
 }

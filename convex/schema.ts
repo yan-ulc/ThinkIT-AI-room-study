@@ -46,7 +46,7 @@ export default defineSchema({
     senderName: v.optional(v.string()),
     senderImage: v.optional(v.string()),
     content: v.string(),
-    type: v.union(v.literal("text"), v.literal("ai"), v.literal("system")),
+    type: v.union(v.literal("text"), v.literal("ai"), v.literal("system"), v.literal("quiz")),
     replyToId: v.optional(v.id("messages")),
     selectionId: v.optional(v.id("documentSelections")),
     mentionedUsers: v.array(v.string()), // Simpan username atau ID untuk mention
@@ -55,6 +55,8 @@ export default defineSchema({
         model: v.optional(v.string()),
         tokens: v.optional(v.number()),
         sources: v.optional(v.array(v.string())),
+        quizId: v.optional(v.id("quizzes")),
+        quizTitle: v.optional(v.string()),
       }),
     ),
   })
@@ -105,7 +107,9 @@ export default defineSchema({
   }).index("by_documentId", ["documentId"]),
 
   quizzes: defineTable({
-    documentId: v.id("documents"),
+    roomId: v.id("rooms"), // WAJIB: Biar bisa di-query per Room
+    documentId: v.id("documents"), 
+    title: v.string(), // Contoh: "Quiz Dasar Jaringan - Pertemuan 1"
     questions: v.array(
       v.object({
         question: v.string(),
@@ -113,17 +117,17 @@ export default defineSchema({
         answer: v.string(),
       })
     ),
+    userId: v.string(), // Creator
+    createdAt: v.number(), // Buat sorting di Room Tab
+  }).index("by_roomId", ["roomId"]), // Index utama kita sekarang roomId
+
+  // Ganti quizSubmissions jadi attempts
+  attempts: defineTable({
+    quizId: v.id("quizzes"), // Relasi ke quiz-nya
     userId: v.string(),
-  }).index("by_documentId", ["documentId"]),
-
-  // Tambahkan di schema.ts
-quizSubmissions: defineTable({
-  documentId: v.id("documents"),
-  quizId: v.id("quizzes"),
-  userId: v.string(),
-  score: v.number(),
-  answers: v.array(v.string()), // Jawaban yang dipilih user
-  createdAt: v.number(),
-}).index("by_user_doc", ["userId", "documentId"]),  
+    score: v.number(),
+    answers: v.array(v.string()),
+    createdAt: v.number(), // Buat liat history progress
+  }).index("by_quizId", ["quizId"])
+    .index("by_userId", ["userId"]),
 });
-

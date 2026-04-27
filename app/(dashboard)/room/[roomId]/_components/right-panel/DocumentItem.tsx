@@ -31,7 +31,7 @@ export function DocumentItem({
 
   return (
     <div
-      className={`group flex items-center gap-2 rounded-lg border border-border  px-2.5 py-2 transition-all bg-primary hover:border-border-strong hover:shadow-sm ${
+      className={`group flex items-center gap-2 rounded-lg border border-border/80 bg-card/65 px-2.5 py-2 transition-colors hover:border-primary/35 hover:shadow-md ${
         isDeleting ? "opacity-50" : ""
       }`}
     >
@@ -43,26 +43,26 @@ export function DocumentItem({
         title={`Preview ${name}`}
         disabled={isDeleting}
       >
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-accent border-border bg-surface2">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/80 bg-muted/60">
           <FileText size={13} className="text-primary/70" />
         </div>
         <div className="min-w-0">
-          <span className="block truncate text-[12px] font-medium text-background leading-snug">
+          <span className="block truncate text-[12px] font-medium leading-snug text-foreground">
             {name}
           </span>
-          <span className="text-[10px] uppercase tracking-wide text-background  -3">
-            {isPdf ? "PDF" : name.split(".").pop()?.toUpperCase() ?? "File"}
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {isPdf ? "PDF" : (name.split(".").pop()?.toUpperCase() ?? "File")}
           </span>
         </div>
       </button>
 
       {/* Actions — visible on hover */}
-      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity  group-hover:opacity-100">
+      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
         <a
           href={fileUrl}
           target="_blank"
           rel="noreferrer"
-          className="rounded-md p-1 text-text-3 transition-colors hover:bg-muted hover:text-foreground text-background"
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           title="Open in new tab"
           aria-label={`Open ${name} in new tab`}
         >
@@ -73,7 +73,7 @@ export function DocumentItem({
           type="button"
           onClick={() => onDelete(id, storageId, name)}
           disabled={isDeleting}
-          className="rounded-md p-1 text-text-3 transition-colors text-background hover:bg-muted hover:text-destructive disabled:opacity-40"
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-destructive disabled:opacity-40"
           title="Delete document"
           aria-label={`Delete ${name}`}
         >

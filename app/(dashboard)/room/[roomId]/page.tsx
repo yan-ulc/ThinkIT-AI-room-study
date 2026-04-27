@@ -1,5 +1,6 @@
 "use client";
 
+import { QuizReadyDialog } from "@/components/quiz/QuizReadyDialog";
 import { Loader2 } from "lucide-react";
 import { ChatSection } from "./_components/chat/ChatSection";
 import { RightPanel } from "./_components/right-panel/RightPanel";
@@ -18,6 +19,10 @@ export default function RoomPage() {
     fileInputRef,
     deletingDocId,
     documentContext,
+    generatingQuizForDocId,
+    lastGeneratedQuiz,
+    clearLastGeneratedQuiz,
+    handleGenerateQuiz,
     handleUpload,
     handleDeleteDoc,
     handleUseDocumentContext,
@@ -37,29 +42,44 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      <ChatSection
-        roomId={roomId}
-        roomName={room.name}
-        messages={messages}
-        sendMessage={sendMessage}
-        selectionContext={documentContext}
-        onClearSelectionContext={clearDocumentContext}
-        onCancelSelectionContext={cancelDocumentContext}
-      />
+    <>
+      <div className="chat-ambient relative flex flex-1 overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 opacity-70" />
+        <ChatSection
+          roomId={roomId}
+          roomName={room.name}
+          members={members}
+          messages={messages}
+          sendMessage={sendMessage}
+          selectionContext={documentContext}
+          onClearSelectionContext={clearDocumentContext}
+          onCancelSelectionContext={cancelDocumentContext}
+        />
 
-      <RightPanel
-        rightTab={rightTab}
-        setRightTab={setRightTab}
-        roomId={roomId}
-        docs={docs}
-        members={members}
-        fileInputRef={fileInputRef}
-        deletingDocId={deletingDocId}
-        onUpload={handleUpload}
-        onDelete={handleDeleteDoc}
-        onUseDocumentContext={handleUseDocumentContext}
-      />
-    </div>
+        <RightPanel
+          rightTab={rightTab}
+          setRightTab={setRightTab}
+          roomId={roomId}
+          docs={docs}
+          members={members}
+          fileInputRef={fileInputRef}
+          deletingDocId={deletingDocId}
+          onUpload={handleUpload}
+          onDelete={handleDeleteDoc}
+          onUseDocumentContext={handleUseDocumentContext}
+          generatingQuizForDocId={generatingQuizForDocId}
+          onGenerateQuiz={handleGenerateQuiz}
+        />
+      </div>
+
+      {lastGeneratedQuiz && (
+        <QuizReadyDialog
+          quizId={lastGeneratedQuiz.quizId}
+          title={lastGeneratedQuiz.title}
+          isOpen={!!lastGeneratedQuiz}
+          onClose={clearLastGeneratedQuiz}
+        />
+      )}
+    </>
   );
 }

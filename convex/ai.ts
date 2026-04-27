@@ -126,7 +126,7 @@ export const chatWithAi = internalAction({
     // --- 2. AMBIL 10 CHAT TERAKHIR (BIAR GAK PIKUN) ---
     // Kita panggil query buat ambil sejarah chat
     const lastMessages: Array<{
-      type: "text" | "ai" | "system";
+      type: "text" | "ai" | "system" | "quiz";
       content: string;
     }> = await ctx.runQuery(internal.messages.getRecentMessages, {
       roomId: args.roomId,

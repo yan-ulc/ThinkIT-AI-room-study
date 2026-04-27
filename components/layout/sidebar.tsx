@@ -1,33 +1,21 @@
 "use client";
 
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
-import { Moon, Plus, Sun } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 
 export function Sidebar() {
   const { user } = useUser();
   const pathname = usePathname();
-  const [isDark, setIsDark] = useState(
-    () =>
-      typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark"),
-  );
 
   const rooms = useQuery(api.rooms.getMyRooms);
   const createRoom = useMutation(api.rooms.create);
-
-  const toggleTheme = () => {
-    const root = document.documentElement;
-    const nextDark = !isDark;
-    root.classList.toggle("dark", nextDark);
-    setIsDark(nextDark);
-  };
 
   const handleCreate = async () => {
     const name = prompt("Room Name?");
@@ -52,14 +40,7 @@ export function Sidebar() {
             <span className="h-1.5 w-1.5 rounded-full bg-primary opacity-90" />
             <span className="tracking-[-0.01em]">ThinkIT</span>
           </div>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-text-3 transition-colors duration-150 hover:text-text-2 dark:hover:bg-white/8"
-            aria-label="Toggle theme"
-          >
-            {isDark ? <Sun size={13} /> : <Moon size={13} />}
-          </button>
+          <ThemeToggle className="relative flex h-7 w-7 items-center justify-center rounded-md text-text-3 transition-colors duration-300 hover:bg-muted hover:text-text-2" />
         </div>
       </div>
 
@@ -135,7 +116,7 @@ export function Sidebar() {
             "border border-dashed border-border hover:border-primary/40",
             "hover:bg-primary-muted hover:text-primary",
             "dark:border-white/20 dark:hover:border-primary/45 dark:hover:bg-primary/12",
-            "transition-all duration-150",
+            "transition-colors duration-150",
           )}
         >
           <Plus size={13} strokeWidth={2.5} />

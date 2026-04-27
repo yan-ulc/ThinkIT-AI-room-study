@@ -28,19 +28,19 @@ export default async function LandingPage() {
         {!userId ? (
           <>
             <SignInButton mode="modal">
-              <button className="px-6 py-3 rounded-xl bg-[#4F46E5] text-white font-medium hover:opacity-90 transition-all">
+              <button className="px-6 py-3 rounded-xl bg-[#4F46E5] text-white font-medium hover:opacity-90 transition-opacity">
                 Get Started Free
               </button>
             </SignInButton>
             <SignUpButton mode="modal">
-              <button className="px-6 py-3 rounded-xl bg-white border border-gray-200 text-[#1C1B18] font-medium hover:bg-gray-50 transition-all">
+              <button className="px-6 py-3 rounded-xl bg-white border border-gray-200 text-[#1C1B18] font-medium hover:bg-gray-50 transition-colors">
                 Sign Up
               </button>
             </SignUpButton>
           </>
         ) : (
           <Link href="/dashboard">
-            <button className="px-8 py-3 rounded-xl bg-[#4F46E5] text-white font-medium hover:opacity-90 transition-all shadow-md">
+            <button className="px-8 py-3 rounded-xl bg-[#4F46E5] text-white font-medium hover:opacity-90 transition-opacity shadow-md">
               Enter Dashboard →
             </button>
           </Link>

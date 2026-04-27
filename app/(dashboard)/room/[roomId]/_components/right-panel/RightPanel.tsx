@@ -1,7 +1,8 @@
 "use client";
 
+import { QuizList } from "@/components/quiz/QuizList";
 import type { Id } from "@/convex/_generated/dataModel";
-import { FileText, Users } from "lucide-react";
+import { BrainCircuit, FileText, Users } from "lucide-react";
 import type {
   DocumentContext,
   RoomDocument,
@@ -11,8 +12,8 @@ import { DocumentsTab } from "./DocumentsTab";
 import { MembersTab } from "./MembersTab";
 
 type RightPanelProps = {
-  rightTab: "documents" | "members";
-  setRightTab: (tab: "documents" | "members") => void;
+  rightTab: "documents" | "members" | "quizzes";
+  setRightTab: (tab: "documents" | "members" | "quizzes") => void;
   roomId: Id<"rooms">;
   docs: RoomDocument[] | undefined;
   members: RoomMember[] | undefined;
@@ -25,6 +26,12 @@ type RightPanelProps = {
     name: string,
   ) => Promise<void>;
   onUseDocumentContext: (context: NonNullable<DocumentContext>) => void;
+  generatingQuizForDocId: Id<"documents"> | null;
+  onGenerateQuiz: (
+    docId: Id<"documents">,
+    title?: string,
+    questionCount?: number,
+  ) => Promise<void>;
 };
 
 export function RightPanel({
@@ -38,16 +45,34 @@ export function RightPanel({
   onUpload,
   onDelete,
   onUseDocumentContext,
+  generatingQuizForDocId,
+  onGenerateQuiz,
 }: RightPanelProps) {
   const tabs = [
-    { id: "documents" as const, label: "Documents", icon: FileText, count: docs?.length },
-    { id: "members" as const, label: "Members", icon: Users, count: members?.length },
+    {
+      id: "documents" as const,
+      label: "Documents",
+      icon: FileText,
+      count: docs?.length,
+    },
+    {
+      id: "members" as const,
+      label: "Members",
+      icon: Users,
+      count: members?.length,
+    },
+    {
+      id: "quizzes" as const,
+      label: "Quizzes",
+      icon: BrainCircuit,
+      count: undefined,
+    },
   ];
 
   return (
-    <div className="w-72 shrink-0 flex flex-col bg-surface border-l border-border">
+    <div className="glass-panel w-80 shrink-0 flex flex-col border-l border-border/70">
       {/* Tab bar */}
-      <div className="flex shrink-0 border-b border-border">
+      <div className="flex shrink-0 border-b border-border/80 bg-card/45">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = rightTab === tab.id;
@@ -56,22 +81,25 @@ export function RightPanel({
               key={tab.id}
               onClick={() => setRightTab(tab.id)}
               className={`relative flex flex-1 items-center justify-center gap-1.5 py-3 text-[12px] font-medium transition-colors
-                ${isActive
-                  ? "text-primary"
-                  : "text-text-3 hover:text-text hover:bg-surface2"
+                ${
+                  isActive
+                    ? "text-primary"
+                    : "text-text-3 hover:bg-muted/70 hover:text-text"
                 }`}
             >
               <Icon size={13} />
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span className={`rounded-full px-1.5 py-px text-[10px] font-semibold leading-none
-                  ${isActive ? "bg-primary/10 text-primary" : "bg-muted text-text-3"}`}>
+                <span
+                  className={`rounded-full px-1.5 py-px text-[10px] font-semibold leading-none
+                  ${isActive ? "bg-primary/12 text-primary" : "bg-muted text-text-3"}`}
+                >
                   {tab.count}
                 </span>
               )}
               {/* Active indicator */}
               {isActive && (
-                <span className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-primary" />
+                <span className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full bg-primary" />
               )}
             </button>
           );
@@ -89,9 +117,16 @@ export function RightPanel({
             onUpload={onUpload}
             onDelete={onDelete}
             onUseDocumentContext={onUseDocumentContext}
+            generatingQuizForDocId={generatingQuizForDocId}
+            onGenerateQuiz={onGenerateQuiz}
           />
-        ) : (
+        ) : rightTab === "members" ? (
           <MembersTab roomId={roomId} members={members} />
+        ) : (
+          <QuizList
+            roomId={roomId}
+            generatingQuizForDocId={generatingQuizForDocId}
+          />
         )}
       </div>
     </div>
