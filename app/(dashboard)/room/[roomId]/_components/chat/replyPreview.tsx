@@ -14,19 +14,21 @@ export function ReplyPreview({ replyingTo, onCancel }: ReplyPreviewProps) {
   const previewText = replyingTo.content.replace(/\s+/g, " ").trim();
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl animate-in items-center justify-between overflow-hidden rounded-t-lg border-l-4 border-primary bg-surface2 px-4 py-2 slide-in-from-bottom-2">
-      {/* 1. Tambahin 'min-w-0' dan 'flex-1' di sini biar dia mau ngalah sama tombol 'X' */}
-      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-        <CornerDownRight size={14} className="shrink-0 text-primary" />
-
-        {/* 2. 'min-w-0' di sini wajib banget supaya 'truncate' di bawahnya jalan */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <span className="block w-full truncate text-[11px] font-bold text-primary">
+    <div
+      className="
+        reply-enter mb-1 flex items-center justify-between overflow-hidden
+        rounded-t-xl border-l-2 border-primary
+        bg-primary/6 px-3.5 py-2.5
+        backdrop-blur-sm
+      "
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden">
+        <CornerDownRight size={12} className="shrink-0 text-primary" />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="block text-[10.5px] font-semibold uppercase tracking-wide text-primary leading-none">
             Replying to {senderLabel}
           </span>
-
-          {/* 3. Tambahin 'block w-full' supaya truncate-nya tahu batas maksimalnya */}
-          <span className="block w-full truncate text-[12px] italic leading-tight text-text-2">
+          <span className="block w-full truncate text-[12px] italic leading-snug text-text-2">
             {previewText}
           </span>
         </div>
@@ -35,9 +37,14 @@ export function ReplyPreview({ replyingTo, onCancel }: ReplyPreviewProps) {
       <button
         type="button"
         onClick={onCancel}
-        className="ml-4 shrink-0 rounded-full p-1 text-text-3 transition-colors hover:bg-surface hover:text-text"
+        className="
+          ml-3 shrink-0 flex h-5 w-5 items-center justify-center
+          rounded-full text-text-3
+          transition-colors duration-150
+          hover:bg-border hover:text-text-1
+        "
       >
-        <X size={14} />
+        <X size={12} />
       </button>
     </div>
   );

@@ -1,11 +1,10 @@
 "use client";
 
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
 import { UserButton } from "@clerk/nextjs";
-import { Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -15,18 +14,6 @@ const navItems = [
 
 export function TopNav() {
   const pathname = usePathname();
-  const [isDark, setIsDark] = useState(
-    () =>
-      typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark"),
-  );
-
-  const toggleTheme = () => {
-    const root = document.documentElement;
-    const nextDark = !isDark;
-    root.classList.toggle("dark", nextDark);
-    setIsDark(nextDark);
-  };
 
   return (
     <header className="h-13 border-b border-border/60 bg-surface/95 backdrop-blur-sm px-4 md:px-8 sticky top-0 z-50">
@@ -78,14 +65,7 @@ export function TopNav() {
 
         {/* Right: Theme toggle + User */}
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="flex h-7.5 w-7.5 items-center justify-center rounded-md text-text-3 hover:text-text-2 transition-colors duration-150"
-            aria-label="Toggle theme"
-          >
-            {isDark ? <Sun size={13} /> : <Moon size={13} />}
-          </button>
+          <ThemeToggle className="relative flex h-7.5 w-7.5 items-center justify-center rounded-md text-text-3 transition-colors duration-300 hover:bg-muted hover:text-text-2" />
 
           {/* Subtle divider before avatar */}
           <span className="h-4 w-px bg-border/80" aria-hidden />

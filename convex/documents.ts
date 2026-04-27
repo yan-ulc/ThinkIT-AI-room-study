@@ -280,3 +280,17 @@ export const getByIdInternal = internalQuery({
     return await ctx.db.get(args.documentId);
   },
 });
+
+
+export const getById = query({
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const doc = await ctx.db.get(args.documentId);
+    if (!doc) throw new Error("Document not found");
+
+    return {
+      roomId: doc.roomId,
+      title: doc.name,
+    };
+  },
+});

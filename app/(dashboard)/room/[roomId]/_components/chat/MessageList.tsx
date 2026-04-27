@@ -37,43 +37,60 @@ export function MessageList({
     <div
       ref={scrollRef}
       onScroll={onScroll}
-      className="min-h-0 flex-1 overflow-y-auto bg-surface2/60 no-scrollbar"
+      className="no-scrollbar min-h-0 flex-1 overflow-y-auto bg-transparent"
     >
-      {/* Comfortable reading container — not full-width */}
-      <div className="mx-auto w-full max-w-3xl px-6 py-6 space-y-0.5">
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-            <div className="w-10 h-10 rounded-full border border-border bg-surface flex items-center justify-center">
-              <span className="text-lg">💬</span>
+      <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-7">
+        <div className="mx-auto w-full max-w-2xl pb-2">
+          {/* Empty state */}
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center gap-4 py-24 text-center select-none">
+              <div
+                className="
+                  flex h-12 w-12 items-center justify-center rounded-2xl
+                  bg-primary/10 border border-primary/20
+                  shadow-[0_4px_20px_oklch(var(--primary)/0.15)]
+                "
+              >
+                <span className="text-xl">💬</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <p className="text-[13.5px] font-medium text-text-2">
+                  Start the conversation
+                </p>
+                <p className="max-w-60 text-[12px] text-text-3 leading-relaxed">
+                  Ask a question or share a thought to kick things off.
+                </p>
+              </div>
             </div>
-            <p className="text-[13px] text-text-3 max-w-xs leading-relaxed">
-              This is the start of the discussion. Ask a question or share a thought.
-            </p>
+          )}
+
+          {/* Messages */}
+          <div className="space-y-0">
+            {messages.map((msg, index) => {
+              const prevMsg = messages[index - 1];
+              return shouldHidePendingAiMessage(msg) ? null : (
+                <MessageItem
+                  key={msg._id}
+                  msg={msg}
+                  prevMsg={prevMsg}
+                  streamingAiId={streamingAiId}
+                  displayedContent={getDisplayedMessageContent(msg)}
+                  onReply={onReply}
+                />
+              );
+            })}
           </div>
-        )}
 
-        {messages.map((msg, index) => {
-          const prevMsg = messages[index - 1];
-          return shouldHidePendingAiMessage(msg) ? null : (
-            <MessageItem
-              key={msg._id}
-              msg={msg}
-              prevMsg={prevMsg}
-              streamingAiId={streamingAiId}
-              displayedContent={getDisplayedMessageContent(msg)}
-              onReply={onReply}
-            />
-          );
-        })}
+          {/* Thinking indicator */}
+          {isAiThinking && (
+            <div className="mt-5">
+              <ThinkingIndicator />
+            </div>
+          )}
 
-        {isAiThinking && (
-          <div className="pt-2">
-            <ThinkingIndicator />
-          </div>
-        )}
-
-        {/* Bottom breathing room */}
-        <div className="h-4" />
+          {/* Bottom spacer */}
+          <div className="h-6" />
+        </div>
       </div>
     </div>
   );

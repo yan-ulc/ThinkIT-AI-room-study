@@ -2,16 +2,20 @@
 
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type RoomMessage = {
   _id: Id<"messages">;
   _creationTime: number;
   senderId: Id<"users"> | "ai" | "system" | null;
   content: string;
-  type: "text" | "ai" | "system";
+  type: "text" | "ai" | "system" | "quiz";
+  metadata?: {
+    quizId?: Id<"quizzes">;
+    quizTitle?: string;
+  };
   replyToId?: Id<"messages">;
   selectionId?: Id<"documentSelections">;
   selectionText?: string;
@@ -26,6 +30,7 @@ export type RoomMessage = {
 export type RoomMember = {
   _id: Id<"users">;
   displayName: string;
+  imageUrl?: string;
   role: "admin" | "member";
   isMe: boolean;
 };
@@ -47,13 +52,20 @@ export function useRoomData() {
   const params = useParams();
   const roomId = params.roomId as Id<"rooms">;
 
-  const [rightTab, setRightTab] = useState<"documents" | "members">(
+  const [rightTab, setRightTab] = useState<"documents" | "members" | "quizzes">(
     "documents",
   );
   const [deletingDocId, setDeletingDocId] = useState<Id<"documents"> | null>(
     null,
   );
   const [documentContext, setDocumentContext] = useState<DocumentContext>(null);
+  // Persists across DocumentPreview unmounts — this is the fix for quiz generation state
+  const [generatingQuizForDocId, setGeneratingQuizForDocId] =
+    useState<Id<"documents"> | null>(null);
+  const [lastGeneratedQuiz, setLastGeneratedQuiz] = useState<{
+    quizId: Id<"quizzes">;
+    title: string;
+  } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,11 +86,40 @@ export function useRoomData() {
   const saveDoc = useMutation(api.documents.create);
   const removeDoc = useMutation(api.documents.remove);
   const cancelSelection = useMutation(api.documents.cancelSelection);
+  const generateQuizAction = useAction(api.quiz.generate);
+
+  const handleGenerateQuiz = useCallback(
+    async (
+      documentId: Id<"documents">,
+      title?: string,
+      questionCount?: number,
+    ) => {
+      if (generatingQuizForDocId) return; // Block concurrent generation
+      setGeneratingQuizForDocId(documentId);
+      try {
+        const result = await generateQuizAction({
+          documentId,
+          title,
+          questionCount,
+        });
+        // Store result so we can show the success dialog
+        setLastGeneratedQuiz({ quizId: result.quizId, title: result.title });
+      } catch (e) {
+        console.error(e);
+        alert("Failed to generate quiz. Please try again.");
+      } finally {
+        setGeneratingQuizForDocId(null);
+      }
+    },
+    [generatingQuizForDocId, generateQuizAction],
+  );
 
   useEffect(() => {
-    if (!roomId || messages === undefined) return;
+    // room being non-null means auth passed and user is a member.
+    // Only then is it safe to call markRoomRead.
+    if (!roomId || !room || messages === undefined) return;
     void markRoomRead({ roomId });
-  }, [roomId, messages, markRoomRead]);
+  }, [roomId, room, messages, markRoomRead]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -157,6 +198,10 @@ export function useRoomData() {
     fileInputRef,
     deletingDocId,
     documentContext,
+    generatingQuizForDocId,
+    lastGeneratedQuiz,
+    clearLastGeneratedQuiz: () => setLastGeneratedQuiz(null),
+    handleGenerateQuiz,
     handleUpload,
     handleDeleteDoc,
     handleUseDocumentContext,

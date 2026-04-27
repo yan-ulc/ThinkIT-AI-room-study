@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { internalQuery, mutation, query } from "./_generated/server";
-import { internal } from "@/convex/_generated/api";
+import { internal } from "./_generated/api";
 
 // STEP 3.1 & 3.2 — Send & Save Message
 // convex/messages.ts
@@ -237,5 +237,52 @@ export const getById = internalQuery({
   args: { id: v.id("messages") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
+  },
+});
+
+export const sendQuizBroadcast = mutation({
+  args: {
+    roomId: v.id("rooms"),
+    quizId: v.id("quizzes"),
+    title: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Verifikasi user
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    // Simpan pesan broadcast
+    const messageId = await ctx.db.insert("messages", {
+      roomId: args.roomId,
+      content: `${user.username || user.displayName} generated a new quiz: ${args.title}`,
+      senderId: "system",
+      type: "quiz",
+      mentionedUsers: [],
+      metadata: {
+        quizId: args.quizId,
+        quizTitle: args.title,
+      },
+    });
+
+    // Update unread counts
+    const memberships = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_roomId", (q) => q.eq("roomId", args.roomId))
+      .collect();
+
+    for (const member of memberships) {
+      if (member.userId === user._id) continue;
+      await ctx.db.patch(member._id, {
+        unreadCount: (member.unreadCount ?? 0) + 1,
+      });
+    }
+
+    return messageId;
   },
 });

@@ -314,6 +314,7 @@ export const getMembers = query({
         return {
           _id: user._id,
           displayName: user.displayName,
+          imageUrl: user.imageUrl,
           role: m.role,
           isMe: m.userId === currentUser._id,
         };
