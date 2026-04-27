@@ -29,7 +29,7 @@ type DocumentPreviewProps = {
   onAskAi: (selectedText: string) => Promise<void>;
   isGeneratingQuiz: boolean; // is THIS doc generating?
   isAnyQuizGenerating: boolean; // is any doc generating (block all buttons)?
-  onGenerateQuiz: (title?: string, questionCount?: number) => void; // trigger from parent
+  onGenerateQuiz: (title?: string, questionCount?: number) => Promise<boolean>; // trigger from parent
 };
 
 export function DocumentPreview({
@@ -172,9 +172,11 @@ export function DocumentPreview({
             defaultTitle={doc.name.replace(/\.[^.]+$/, "")}
             onClose={() => setShowGenerateDialog(false)}
             isGenerating={isGeneratingQuiz}
-            onConfirm={(title, questionCount) => {
-              setShowGenerateDialog(false);
-              onGenerateQuiz(title, questionCount);
+            onConfirm={async (title, questionCount) => {
+              const success = await onGenerateQuiz(title, questionCount);
+              if (success) {
+                setShowGenerateDialog(false);
+              }
             }}
           />
         </div>

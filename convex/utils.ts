@@ -12,14 +12,26 @@ type CallAIOptions = {
   };
 };
 
+const REQUEST_TIMEOUT_MS = 45_000;
+const MAX_PROMPT_CONTENT_CHARS = 20_000;
+
+function clampContent(content: string): string {
+  if (content.length <= MAX_PROMPT_CONTENT_CHARS) return content;
+  return `${content.slice(0, MAX_PROMPT_CONTENT_CHARS)}\n\n[Content truncated for model budget]`;
+}
+
 export async function callAI({ mode, content, context }: CallAIOptions) {
-  const apiKey = process.env.DIGITALOCEAN_MODEL_ACCESS_KEY ?? process.env.DIGITALOCEAN_AI_KEY;
+  const apiKey =
+    process.env.DIGITALOCEAN_MODEL_ACCESS_KEY ??
+    process.env.DIGITALOCEAN_AI_KEY;
   if (!apiKey) throw new Error("Missing AI API Key");
 
   const previousQuestionsBlock =
     context?.previousQuestions && context.previousQuestions.length > 0
       ? `\nHINDARI pertanyaan yang mirip dengan soal-soal ini:\n${context.previousQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n")}\n`
       : "";
+
+  const safeContent = clampContent(content);
 
   const config = {
     summarize: {
@@ -30,7 +42,7 @@ export async function callAI({ mode, content, context }: CallAIOptions) {
 Format output HARUS JSON persis seperti ini (tidak ada teks lain):
 { "summaryText": "paragraf ringkasan yang padat", "keyPoints": ["poin 1", "poin 2", "dst"] }
 
-ISI DOKUMEN: ${content}`,
+ISI DOKUMEN: ${safeContent}`,
       maxTokens: 2000,
     },
     quiz: {
@@ -48,7 +60,7 @@ ATURAN FORMAT (WAJIB DIIKUTI):
 - Pastikan array selalu ditutup dengan ] di akhir
 - Buat TEPAT ${context?.questionCount ?? 5} soal, tidak lebih tidak kurang
 
-RINGKASAN: ${content}`,
+RINGKASAN: ${safeContent}`,
       maxTokens: Math.max(2000, (context?.questionCount ?? 5) * 400),
     },
   };
@@ -56,24 +68,61 @@ RINGKASAN: ${content}`,
   const selected = config[mode];
 
   const url = "https://inference.do-ai.run/v1/chat/completions";
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: selected.model,
-      messages: [
-        { role: "system", content: selected.system },
-        { role: "user", content: selected.prompt },
-      ],
-      max_tokens: selected.maxTokens,
-      temperature: 0.3,
-    }),
-  });
+  let lastError: unknown;
+  let response: Response | null = null;
 
-  if (!response.ok) throw new Error(`AI API Error ${response.status}`);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: selected.model,
+          messages: [
+            { role: "system", content: selected.system },
+            { role: "user", content: selected.prompt },
+          ],
+          max_tokens: selected.maxTokens,
+          temperature: 0.3,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        lastError = new Error(`AI API Error ${response.status}`);
+        if (attempt === 1) {
+          throw lastError;
+        }
+        continue;
+      }
+
+      break;
+    } catch (error) {
+      clearTimeout(timeout);
+      if (error instanceof Error && error.name === "AbortError") {
+        lastError = new Error("AI request timed out. Please retry.");
+      } else {
+        lastError = error;
+      }
+
+      if (attempt === 1) {
+        throw lastError;
+      }
+    }
+  }
+
+  if (!response) {
+    throw lastError instanceof Error
+      ? lastError
+      : new Error("AI request failed.");
+  }
 
   const data = await response.json();
   let result: string = data?.choices?.[0]?.message?.content ?? "";
@@ -82,7 +131,10 @@ RINGKASAN: ${content}`,
   result = result.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 
   // Step 2: Strip markdown code fences
-  result = result.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
+  result = result
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/gi, "")
+    .trim();
 
   // Step 3: Extract the outermost JSON object or array
   const arrayStart = result.indexOf("[");
@@ -95,9 +147,10 @@ RINGKASAN: ${content}`,
   const hasObj = objStart !== -1 && objEnd > objStart;
 
   if (hasArray && hasObj) {
-    result = arrayStart < objStart
-      ? result.substring(arrayStart, arrayEnd + 1)
-      : result.substring(objStart, objEnd + 1);
+    result =
+      arrayStart < objStart
+        ? result.substring(arrayStart, arrayEnd + 1)
+        : result.substring(objStart, objEnd + 1);
   } else if (hasArray) {
     result = result.substring(arrayStart, arrayEnd + 1);
   } else if (hasObj) {
@@ -109,7 +162,7 @@ RINGKASAN: ${content}`,
     JSON.parse(result);
   } catch {
     throw new Error(
-      `AI returned invalid JSON. Snippet: ${result.slice(0, 300)}`
+      `AI returned invalid JSON. Snippet: ${result.slice(0, 300)}`,
     );
   }
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -16,9 +16,8 @@ import {
   CheckCircle2,
   Loader2,
   Trophy,
-  Sparkles,
 } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type QuizQuestion = {
   question: string;
@@ -71,7 +70,9 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
   const score = () => {
     if (!totalSteps) return 0;
     return (
-      (questions.filter((q, i) => q.answer === userAnswers[i]).length / totalSteps) * 100
+      (questions.filter((q, i) => q.answer === userAnswers[i]).length /
+        totalSteps) *
+      100
     );
   };
 
@@ -80,7 +81,11 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
     if (!quiz) return;
     setIsSubmitting(true);
     try {
-      await submitScore({ quizId: quiz._id, score: finalScore, answers: userAnswers });
+      await submitScore({
+        quizId: quiz._id,
+        score: finalScore,
+        answers: userAnswers,
+      });
       setStep(totalSteps + 1);
     } finally {
       setIsSubmitting(false);
@@ -96,25 +101,36 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
 
   // Grade label
   const grade =
-    finalScore >= 90 ? "Luar biasa! 🏆" :
-    finalScore >= 70 ? "Bagus sekali! 🎉" :
-    finalScore >= 50 ? "Lumayan, terus berlatih! 💪" :
-    "Yuk belajar lagi! 📚";
+    finalScore >= 90
+      ? "Luar biasa! 🏆"
+      : finalScore >= 70
+        ? "Bagus sekali! 🎉"
+        : finalScore >= 50
+          ? "Lumayan, terus berlatih! 💪"
+          : "Yuk belajar lagi! 📚";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[440px] border-white/[0.08] bg-[#0e0e12] p-0 shadow-[0_0_60px_rgba(0,0,0,0.8),0_0_120px_rgba(255,255,255,0.03)] overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>{quiz?.title || "Quiz"}</DialogTitle>
+          <DialogDescription>
+            Answer multiple-choice questions and submit your score.
+          </DialogDescription>
         </DialogHeader>
 
         {quiz === undefined ? (
           <div className="flex justify-center p-12">
-            <Loader2 size={20} className="animate-spin text-muted-foreground/40" />
+            <Loader2
+              size={20}
+              className="animate-spin text-muted-foreground/40"
+            />
           </div>
         ) : quiz === null ? (
           <div className="flex justify-center p-12 text-center">
-            <p className="text-sm text-muted-foreground/60">Quiz tidak ditemukan.</p>
+            <p className="text-sm text-muted-foreground/60">
+              Quiz tidak ditemukan.
+            </p>
           </div>
         ) : (
           <div className="relative">
@@ -147,7 +163,9 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <h2 className="text-xl font-bold tracking-tight text-foreground">{quiz.title}</h2>
+                    <h2 className="text-xl font-bold tracking-tight text-foreground">
+                      {quiz.title}
+                    </h2>
                     <p className="text-[13px] text-muted-foreground/60">
                       {totalSteps} pertanyaan menanti kamu
                     </p>
@@ -188,7 +206,10 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
                         <button
                           key={opt}
                           onClick={() => handleAnswer(opt)}
-                          style={{ animationDelay: `${idx * 50}ms`, animation: "quizFadeIn 0.3s ease both" }}
+                          style={{
+                            animationDelay: `${idx * 50}ms`,
+                            animation: "quizFadeIn 0.3s ease both",
+                          }}
                           className={`group relative flex items-center gap-3.5 rounded-xl border px-4 py-3.5 text-left text-[14px] font-medium transition-all duration-200 active:scale-[0.99] ${
                             selected
                               ? "border-primary/50 bg-primary/10 text-primary shadow-[0_0_16px_rgba(var(--primary-rgb),0.12)]"
@@ -196,16 +217,21 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
                           }`}
                         >
                           {/* Letter badge */}
-                          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold transition-colors duration-200 ${
-                            selected
-                              ? "bg-primary/20 text-primary"
-                              : "bg-white/[0.06] text-muted-foreground/60 group-hover:bg-white/[0.1]"
-                          }`}>
+                          <span
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold transition-colors duration-200 ${
+                              selected
+                                ? "bg-primary/20 text-primary"
+                                : "bg-white/[0.06] text-muted-foreground/60 group-hover:bg-white/[0.1]"
+                            }`}
+                          >
                             {letters[idx] ?? idx + 1}
                           </span>
                           {opt}
                           {selected && (
-                            <CheckCircle2 size={14} className="ml-auto shrink-0 text-primary" />
+                            <CheckCircle2
+                              size={14}
+                              className="ml-auto shrink-0 text-primary"
+                            />
                           )}
                         </button>
                       );
@@ -254,11 +280,26 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
                   {/* Score ring */}
                   <div className="relative flex h-28 w-28 items-center justify-center">
                     <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl" />
-                    <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
-                      <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="5" className="text-white/[0.06]" />
+                    <svg
+                      className="absolute inset-0 -rotate-90"
+                      viewBox="0 0 100 100"
+                    >
                       <circle
-                        cx="50" cy="50" r="44" fill="none"
-                        stroke="currentColor" strokeWidth="5"
+                        cx="50"
+                        cy="50"
+                        r="44"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="5"
+                        className="text-white/[0.06]"
+                      />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="44"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="5"
                         strokeLinecap="round"
                         strokeDasharray={`${2 * Math.PI * 44}`}
                         strokeDashoffset={`${2 * Math.PI * 44 * (1 - finalScore / 100)}`}
@@ -266,13 +307,19 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
                       />
                     </svg>
                     <div className="relative text-center">
-                      <p className="text-3xl font-bold text-foreground">{finalScore}</p>
-                      <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Skor</p>
+                      <p className="text-3xl font-bold text-foreground">
+                        {finalScore}
+                      </p>
+                      <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">
+                        Skor
+                      </p>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <h2 className="text-xl font-bold text-foreground">{grade}</h2>
+                    <h2 className="text-xl font-bold text-foreground">
+                      {grade}
+                    </h2>
                     <p className="text-[13px] text-muted-foreground/60">
                       {correctCount} dari {totalSteps} jawaban benar
                     </p>
@@ -280,7 +327,11 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
 
                   <div className="flex w-full gap-2.5 pt-2">
                     <button
-                      onClick={() => { setStep(0); setUserAnswers([]); setAnimKey((k) => k + 1); }}
+                      onClick={() => {
+                        setStep(0);
+                        setUserAnswers([]);
+                        setAnimKey((k) => k + 1);
+                      }}
                       className="flex-1 rounded-xl border border-white/[0.08] bg-white/[0.04] py-2.5 text-[13px] font-semibold text-foreground/70 transition-all duration-200 hover:bg-white/[0.07] hover:text-foreground active:scale-[0.98]"
                     >
                       Ulangi

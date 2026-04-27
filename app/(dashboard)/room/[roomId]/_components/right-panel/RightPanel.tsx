@@ -31,7 +31,7 @@ type RightPanelProps = {
     docId: Id<"documents">,
     title?: string,
     questionCount?: number,
-  ) => Promise<void>;
+  ) => Promise<boolean>;
 };
 
 export function RightPanel({

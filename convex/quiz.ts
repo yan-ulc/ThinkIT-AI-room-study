@@ -4,6 +4,68 @@ import { Doc, Id } from "./_generated/dataModel";
 import { action, mutation, query } from "./_generated/server";
 import { callAI } from "./utils";
 
+type QuizQuestion = {
+  question: string;
+  options: string[];
+  answer: string;
+};
+
+function parseQuizQuestions(raw: string): QuizQuestion[] {
+  const parsed: unknown = JSON.parse(raw);
+
+  const candidate = Array.isArray(parsed)
+    ? parsed
+    : parsed &&
+        typeof parsed === "object" &&
+        "questions" in parsed &&
+        Array.isArray((parsed as { questions?: unknown }).questions)
+      ? (parsed as { questions: unknown[] }).questions
+      : null;
+
+  if (!candidate) {
+    throw new Error("AI returned an invalid quiz payload shape.");
+  }
+
+  const questions: QuizQuestion[] = candidate
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+
+      const row = item as {
+        question?: unknown;
+        options?: unknown;
+        answer?: unknown;
+      };
+
+      if (typeof row.question !== "string") return null;
+      if (!Array.isArray(row.options)) return null;
+
+      const options = row.options
+        .filter((opt): opt is string => typeof opt === "string")
+        .map((opt) => opt.trim())
+        .filter((opt) => opt.length > 0)
+        .slice(0, 4);
+
+      if (options.length !== 4) return null;
+
+      const answerRaw =
+        typeof row.answer === "string" ? row.answer.trim() : options[0];
+      const answer = options.includes(answerRaw) ? answerRaw : options[0];
+
+      return {
+        question: row.question.trim(),
+        options,
+        answer,
+      };
+    })
+    .filter((q): q is QuizQuestion => q !== null);
+
+  if (questions.length === 0) {
+    throw new Error("AI returned no valid quiz questions.");
+  }
+
+  return questions;
+}
+
 // --- QUERIES ---
 export const getByRoomId = query({
   args: { roomId: v.id("rooms") },
@@ -19,6 +81,21 @@ export const getById = query({
   args: { id: v.id("quizzes") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
+  },
+});
+
+export const getRecentByRoomId = query({
+  args: {
+    roomId: v.id("rooms"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const take = Math.min(Math.max(args.limit ?? 8, 1), 20);
+    return await ctx.db
+      .query("quizzes")
+      .withIndex("by_roomId", (q) => q.eq("roomId", args.roomId))
+      .order("desc")
+      .take(take);
   },
 });
 
@@ -128,15 +205,15 @@ export const generate = action({
 
     // 3. Ambil quiz sebelumnya (optional - anti duplicate)
     const previousQuizzes: Doc<"quizzes">[] = await ctx.runQuery(
-      api.quiz.getByRoomId,
+      api.quiz.getRecentByRoomId,
       {
         roomId: document.roomId,
+        limit: 8,
       },
     );
 
     // ambil semua pertanyaan lama (biar AI avoid)
     const previousQuestions = previousQuizzes
-      .sort((a, b) => b.createdAt - a.createdAt) // terbaru dulu
       .slice(0, 5) // ambil max 5 quiz terakhir
       .flatMap((q) =>
         q.questions
@@ -156,21 +233,33 @@ export const generate = action({
     const quizTitle = args.title ?? document.title ?? "Untitled Quiz";
 
     // 4. Inject context ke AI
-    const aiResponse = await callAI({
-      mode: "quiz",
-      content: summaryText,
-      context: {
-        previousQuestions,
-        title: quizTitle,
-        questionCount: args.questionCount ?? 5,
-      },
-    });
+    const requestedCount = args.questionCount ?? 5;
+    let questions: QuizQuestion[] = [];
 
-    const questions: Array<{
-      question: string;
-      options: string[];
-      answer: string;
-    }> = JSON.parse(aiResponse);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const aiResponse = await callAI({
+        mode: "quiz",
+        content: summaryText,
+        context: {
+          previousQuestions,
+          title: quizTitle,
+          questionCount: requestedCount,
+        },
+      });
+
+      try {
+        questions = parseQuizQuestions(aiResponse).slice(0, requestedCount);
+        if (questions.length > 0) break;
+      } catch (err) {
+        if (attempt === 1) {
+          throw err;
+        }
+      }
+    }
+
+    if (questions.length === 0) {
+      throw new Error("Failed to generate a valid quiz. Please try again.");
+    }
 
     // 5. Save dengan metadata lengkap
     const quizId: Id<"quizzes"> = await ctx.runMutation(api.quiz.save, {

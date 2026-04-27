@@ -8,6 +8,8 @@ type SummaryPayload = {
   keyPoints: string[];
 };
 
+const MAX_SUMMARY_SOURCE_CHARS = 24_000;
+
 function isSummaryPayload(value: unknown): value is SummaryPayload {
   if (!value || typeof value !== "object") return false;
   const data = value as { summaryText?: unknown; keyPoints?: unknown };
@@ -74,7 +76,8 @@ export const generate = action({
     const combinedContent = chunks
       .map((chunk) => chunk.text.trim())
       .filter((text) => text.length > 0)
-      .join("\n\n");
+      .join("\n\n")
+      .slice(0, MAX_SUMMARY_SOURCE_CHARS);
 
     const aiResponse = await callAI({
       mode: "summarize",

@@ -3,7 +3,7 @@
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
+  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { BrainCircuit, Sparkles } from "lucide-react";
@@ -13,7 +13,7 @@ type QuizGenerateDialogProps = {
   isOpen: boolean;
   defaultTitle: string;
   onClose: () => void;
-  onConfirm: (title: string, questionCount: number) => void;
+  onConfirm: (title: string, questionCount: number) => Promise<void> | void;
   isGenerating: boolean;
 };
 
@@ -36,8 +36,8 @@ export function QuizGenerateDialog({
     }
   }, [isOpen, defaultTitle]);
 
-  const handleConfirm = () => {
-    onConfirm(title.trim() || defaultTitle, questionCount);
+  const handleConfirm = async () => {
+    await onConfirm(title.trim() || defaultTitle, questionCount);
   };
 
   return (
@@ -53,8 +53,12 @@ export function QuizGenerateDialog({
               <BrainCircuit size={18} className="text-primary" />
             </div>
             <div>
-              <DialogTitle className="text-[16px] font-bold text-foreground">Generate Quiz</DialogTitle>
-              <p className="text-[11px] text-muted-foreground/50">Dari dokumen yang dipilih</p>
+              <DialogTitle className="text-[16px] font-bold text-foreground">
+                Generate Quiz
+              </DialogTitle>
+              <DialogDescription className="text-[11px] text-muted-foreground/50">
+                Dari dokumen yang dipilih.
+              </DialogDescription>
             </div>
           </div>
 
@@ -74,7 +78,9 @@ export function QuizGenerateDialog({
               maxLength={80}
               className="w-full rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground/30 outline-none transition-all duration-200 focus:border-primary/40 focus:bg-primary/[0.04] focus:ring-1 focus:ring-primary/20"
             />
-            <p className="text-[11px] text-muted-foreground/40">Default: nama dokumen</p>
+            <p className="text-[11px] text-muted-foreground/40">
+              Default: nama dokumen
+            </p>
           </div>
 
           {/* Question Count */}
@@ -113,7 +119,9 @@ export function QuizGenerateDialog({
               />
               <div className="flex justify-between text-[11px] text-muted-foreground/40">
                 <span>3 soal</span>
-                <span className="font-bold text-primary/80">{questionCount} soal dipilih</span>
+                <span className="font-bold text-primary/80">
+                  {questionCount} soal dipilih
+                </span>
                 <span>20 soal</span>
               </div>
             </div>

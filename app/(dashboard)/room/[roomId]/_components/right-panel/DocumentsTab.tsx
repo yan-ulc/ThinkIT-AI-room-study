@@ -29,7 +29,7 @@ type DocumentsTabProps = {
     docId: Id<"documents">,
     title?: string,
     questionCount?: number,
-  ) => Promise<void>;
+  ) => Promise<boolean>;
 };
 
 export function DocumentsTab({
@@ -115,7 +115,7 @@ export function DocumentsTab({
         previewDoc &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/72 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-100 flex items-center justify-center bg-background/72 p-4 backdrop-blur-sm"
             onClick={() => setPreviewDoc(null)}
           >
             <div

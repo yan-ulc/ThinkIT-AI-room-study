@@ -93,21 +93,39 @@ export function useRoomData() {
       documentId: Id<"documents">,
       title?: string,
       questionCount?: number,
-    ) => {
-      if (generatingQuizForDocId) return; // Block concurrent generation
+    ): Promise<boolean> => {
+      if (generatingQuizForDocId) return false; // Block concurrent generation
       setGeneratingQuizForDocId(documentId);
+      let timeoutId: number | undefined;
       try {
-        const result = await generateQuizAction({
-          documentId,
-          title,
-          questionCount,
+        const timeoutMs = 60_000;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = window.setTimeout(() => {
+            reject(new Error("Quiz generation timed out. Please try again."));
+          }, timeoutMs);
         });
+
+        const result = await Promise.race([
+          generateQuizAction({
+            documentId,
+            title,
+            questionCount,
+          }),
+          timeoutPromise,
+        ]);
         // Store result so we can show the success dialog
         setLastGeneratedQuiz({ quizId: result.quizId, title: result.title });
+        return true;
       } catch (e) {
         console.error(e);
-        alert("Failed to generate quiz. Please try again.");
+        const message =
+          e instanceof Error ? e.message : "Failed to generate quiz.";
+        alert(message);
+        return false;
       } finally {
+        if (timeoutId) {
+          window.clearTimeout(timeoutId);
+        }
         setGeneratingQuizForDocId(null);
       }
     },

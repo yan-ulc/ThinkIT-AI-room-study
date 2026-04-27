@@ -3,13 +3,14 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Id } from "@/convex/_generated/dataModel";
-import { PlayCircle, X, CheckCircle2 } from "lucide-react";
-import { QuizModal } from "./QuizModal";
+import { CheckCircle2, PlayCircle, X } from "lucide-react";
 import { useState } from "react";
+import { QuizModal } from "./QuizModal";
 
 type QuizReadyDialogProps = {
   quizId: Id<"quizzes">;
@@ -18,7 +19,12 @@ type QuizReadyDialogProps = {
   onClose: () => void;
 };
 
-export function QuizReadyDialog({ quizId, title, isOpen, onClose }: QuizReadyDialogProps) {
+export function QuizReadyDialog({
+  quizId,
+  title,
+  isOpen,
+  onClose,
+}: QuizReadyDialogProps) {
   const [showQuizPlayer, setShowQuizPlayer] = useState(false);
 
   const handleStartQuiz = () => {
@@ -32,6 +38,9 @@ export function QuizReadyDialog({ quizId, title, isOpen, onClose }: QuizReadyDia
         <DialogContent className="sm:max-w-sm border-white/[0.08] bg-[#0e0e12] p-0 shadow-[0_0_60px_rgba(0,0,0,0.8),0_0_100px_rgba(255,255,255,0.02)] overflow-hidden">
           <DialogHeader className="sr-only">
             <DialogTitle>Quiz Ready</DialogTitle>
+            <DialogDescription>
+              Quiz has been generated and is ready to start.
+            </DialogDescription>
           </DialogHeader>
 
           {/* Top glow strip */}
@@ -48,10 +57,14 @@ export function QuizReadyDialog({ quizId, title, isOpen, onClose }: QuizReadyDia
 
             {/* Text */}
             <div className="space-y-2">
-              <h2 className="text-xl font-bold tracking-tight text-foreground">Quiz Siap! 🎉</h2>
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
+                Quiz Siap! 🎉
+              </h2>
               <p className="text-[13px] leading-relaxed text-muted-foreground/70">
-                <span className="font-semibold text-foreground/80">"{title}"</span> berhasil digenerate.{" "}
-                Mau langsung dikerjain sekarang?
+                <span className="font-semibold text-foreground/80">
+                  "{title}"
+                </span>{" "}
+                berhasil digenerate. Mau langsung dikerjain sekarang?
               </p>
             </div>
 
