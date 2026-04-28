@@ -19,7 +19,7 @@ export function UploadButton({ onClick, onFiles, isUploading }: UploadButtonProp
       onFiles(files);
       return;
     }
-    onClick();
+    onClick?.();
   };
 
   return (
