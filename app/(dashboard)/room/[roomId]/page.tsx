@@ -1,7 +1,7 @@
 "use client";
 
 import { QuizReadyDialog } from "@/components/quiz/QuizReadyDialog";
-import { Loader2 } from "lucide-react";
+import { ChatRoomSkeleton } from "./_components/chat/ChatRoomSkeleton";
 import { ChatSection } from "./_components/chat/ChatSection";
 import { RightPanel } from "./_components/right-panel/RightPanel";
 import { useRoomData } from "./hooks/useRoomData";
@@ -16,29 +16,22 @@ export default function RoomPage() {
     sendMessage,
     rightTab,
     setRightTab,
-    fileInputRef,
     deletingDocId,
     documentContext,
     generatingQuizForDocId,
     lastGeneratedQuiz,
     clearLastGeneratedQuiz,
     handleGenerateQuiz,
-    handleUpload,
+    handleUploadFiles,
     handleDeleteDoc,
     handleUseDocumentContext,
     clearDocumentContext,
     cancelDocumentContext,
+    isUploading,
   } = useRoomData();
 
   if (!room || messages === undefined) {
-    return (
-      <div className="flex h-full w-full flex-1 items-center justify-center bg-surface">
-        <div className="flex items-center gap-2 text-text-3">
-          <Loader2 size={18} className="animate-spin" />
-          <span className="text-sm font-medium">Loading room...</span>
-        </div>
-      </div>
-    );
+    return <ChatRoomSkeleton />;
   }
 
   return (
@@ -62,13 +55,13 @@ export default function RoomPage() {
           roomId={roomId}
           docs={docs}
           members={members}
-          fileInputRef={fileInputRef}
           deletingDocId={deletingDocId}
-          onUpload={handleUpload}
+          onUploadFiles={handleUploadFiles}
           onDelete={handleDeleteDoc}
           onUseDocumentContext={handleUseDocumentContext}
           generatingQuizForDocId={generatingQuizForDocId}
           onGenerateQuiz={handleGenerateQuiz}
+          isUploading={isUploading}
         />
       </div>
 

@@ -307,3 +307,29 @@ export const getLatestByRoomId = query({
       .first(); //
   },
 });
+
+/**
+ * Returns { [quizId]: bestScore } for the current user.
+ * Used to show "Nilai Tertinggi" on each QuizCard.
+ */
+export const getBestScores = query({
+  args: {},
+  handler: async (ctx): Promise<Record<string, number>> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return {};
+
+    const attempts = await ctx.db
+      .query("attempts")
+      .withIndex("by_userId", (q) => q.eq("userId", identity.subject))
+      .collect();
+
+    const best: Record<string, number> = {};
+    for (const attempt of attempts) {
+      const key = attempt.quizId as string;
+      if (best[key] === undefined || attempt.score > best[key]) {
+        best[key] = Math.round(attempt.score);
+      }
+    }
+    return best;
+  },
+});

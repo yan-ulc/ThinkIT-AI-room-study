@@ -54,6 +54,7 @@ function getRoomAccent(id: string) {
 export default function DashboardPage() {
   const router = useRouter();
   const rooms = useQuery(api.rooms.getDashboardRooms);
+  const me = useQuery(api.users.currentUser);
   const createRoom = useMutation(api.rooms.create);
   const joinRoom = useMutation(api.rooms.join);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
@@ -113,7 +114,7 @@ export default function DashboardPage() {
                 thinkIT dashboard
               </p>
               <h1 className="text-[22px] font-semibold tracking-tight text-text">
-                {getGreeting()} 👋
+                {getGreeting()}{me ? `, ${me.username}` : ""} 👋
               </h1>
               <p className="mt-1 text-[13px] text-text-3">
                 {isLoading

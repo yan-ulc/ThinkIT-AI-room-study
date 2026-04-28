@@ -129,7 +129,10 @@ export function Sidebar() {
 
       {/* User card */}
       <div className="p-3">
-        <div className="flex cursor-default items-center gap-2.5 rounded-lg border border-transparent px-2.5 py-2 transition-colors duration-150 hover:bg-surface2 dark:hover:border-white/12 dark:hover:bg-white/6">
+        <Link
+          href="/profile"
+          className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-transparent px-2.5 py-2 transition-colors duration-150 hover:bg-surface2 dark:hover:border-white/12 dark:hover:bg-white/6"
+        >
           {/* Avatar */}
           <div className="flex h-7 w-7 shrink-0 select-none items-center justify-center rounded-full border border-primary/20 bg-primary-muted text-[10px] font-semibold text-primary dark:border-primary/35 dark:bg-primary/15">
             {initials}
@@ -141,10 +144,10 @@ export function Sidebar() {
               {user?.fullName || "Loading…"}
             </span>
             <span className="text-[10.5px] text-text-3 leading-snug">
-              Student
+              Student / Profile
             </span>
           </div>
-        </div>
+        </Link>
       </div>
     </aside>
   );

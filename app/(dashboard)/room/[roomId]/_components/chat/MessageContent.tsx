@@ -17,94 +17,115 @@ type MarkdownCodeProps = ComponentPropsWithoutRef<"code"> & {
   children?: ReactNode;
 };
 
-export function MessageContent({
-  messageContent,
-  isAi,
-  isMine,
-}: MessageContentProps) {
+export function MessageContent({ messageContent, isAi }: MessageContentProps) {
+  // Plain user messages — no markdown
   if (!isAi) {
     return (
-      <p className="m-0 whitespace-pre-wrap wrap-break-words text-[14px] leading-[1.65] text-inherit">
+      <p className="m-0 whitespace-pre-wrap break-words text-[14px] leading-[1.65] text-inherit">
         {messageContent}
       </p>
     );
   }
 
+  // AI messages — use text-inherit so color always matches the bubble's text-background
+  // which flips correctly between light/dark mode.
+  // Distinction between body vs bold is done via opacity, not hardcoded color.
   return (
-    <div
-      className="
-        prose prose-sm max-w-none wrap-break-words
-        text-inherit
-
-        prose-headings:font-semibold
-        prose-headings:text-inherit
-        prose-headings:tracking-tight
-        prose-headings:mt-5
-        prose-headings:mb-2
-
-        prose-h1:text-[16px]
-        prose-h2:text-[14.5px]
-        prose-h3:text-[13.5px]
-
-        prose-p:my-2.5
-        prose-p:leading-[1.75]
-        prose-p:text-[14px]
-        prose-p:text-inherit
-
-        prose-ul:my-2 prose-ol:my-2
-        prose-li:my-1 prose-li:text-[14px] prose-li:leading-[1.7] prose-li:text-inherit
-
-        prose-strong:font-semibold prose-strong:text-inherit
-
-        prose-a:text-primary prose-a:font-medium prose-a:no-underline
-        prose-a:border-b prose-a:border-primary/30
-        hover:prose-a:border-primary
-
-        prose-blockquote:my-4
-        prose-blockquote:border-l-[3px]
-        prose-blockquote:border-primary/40
-        prose-blockquote:bg-primary/5
-        prose-blockquote:py-2
-        prose-blockquote:pl-4
-        prose-blockquote:pr-3
-        prose-blockquote:text-text-2
-        prose-blockquote:rounded-r-lg
-        prose-blockquote:not-italic
-
-        prose-hr:my-5 prose-hr:border-border
-
-        prose-table:my-4 prose-table:w-full prose-table:text-[13px]
-        prose-th:border prose-th:border-border prose-th:bg-surface-2/60
-          prose-th:px-3 prose-th:py-2 prose-th:text-left
-          prose-th:text-[12px] prose-th:font-semibold prose-th:text-text-1
-        prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2 prose-td:text-text-1
-
-        prose-code:rounded-md prose-code:bg-surface-3/70
-          prose-code:px-1.5 prose-code:py-0.5
-          prose-code:font-mono prose-code:text-[12.5px] prose-code:text-text-1
-          prose-code:border prose-code:border-border/60
-
-        prose-pre:my-4 prose-pre:overflow-x-auto prose-pre:rounded-xl
-          prose-pre:border prose-pre:border-slate-700
-          prose-pre:bg-[#0d1117] prose-pre:p-0
-      "
-    >
+    <div className="ai-prose min-w-0">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          strong: ({ ...props }) => (
-            <span className="font-semibold text-inherit" {...props} />
+          p: ({ children }) => (
+            <p className="my-1.5 text-[13.5px] leading-[1.75] text-inherit opacity-85">
+              {children}
+            </p>
           ),
+
+          h1: ({ children }) => (
+            <h1 className="mb-1 mt-4 text-[15.5px] font-bold text-inherit opacity-100">
+              {children}
+            </h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="mb-1 mt-3 text-[14px] font-bold text-inherit opacity-100">
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="mb-0.5 mt-2.5 text-[13.5px] font-semibold text-inherit opacity-100">
+              {children}
+            </h3>
+          ),
+
+          // Bold: full opacity + heavier weight → visually distinct from body (opacity-85)
+          strong: ({ children }) => (
+            <strong className="font-bold text-inherit opacity-100">
+              {children}
+            </strong>
+          ),
+
+          em: ({ children }) => (
+            <em className="italic text-inherit opacity-70">{children}</em>
+          ),
+
+          ul: ({ children }) => (
+            <ul className="my-1.5 list-disc space-y-0.5 pl-5 text-[13.5px] text-inherit opacity-85">
+              {children}
+            </ul>
+          ),
+
+          ol: ({ children }) => (
+            <ol className="my-1.5 list-decimal space-y-0.5 pl-5 text-[13.5px] text-inherit opacity-85">
+              {children}
+            </ol>
+          ),
+
+          li: ({ children }) => (
+            <li className="leading-[1.65] text-inherit">{children}</li>
+          ),
+
+          hr: () => (
+            <hr className="my-3 border-current opacity-20" />
+          ),
+
+          blockquote: ({ children }) => (
+            <blockquote className="my-2 rounded-r-md border-l-[3px] border-current py-2 pl-3 pr-2 text-[13px] text-inherit not-italic opacity-75"
+              style={{ background: "color-mix(in srgb, currentColor 10%, transparent)" }}
+            >
+              {children}
+            </blockquote>
+          ),
+
+          table: ({ children }) => (
+            <table className="my-2 w-full border-collapse text-[12.5px]">
+              {children}
+            </table>
+          ),
+          th: ({ children }) => (
+            <th
+              className="border border-current px-2.5 py-1.5 text-left text-[11.5px] font-semibold text-inherit opacity-90"
+              style={{ background: "color-mix(in srgb, currentColor 12%, transparent)" }}
+            >
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="border border-current px-2.5 py-1.5 text-inherit opacity-80">
+              {children}
+            </td>
+          ),
+
           code: ({ className, children, ...props }: MarkdownCodeProps) => {
             const match = /language-(\w+)/.exec(className || "");
             const code = String(children).replace(/\n$/, "");
 
             if (match) {
               return (
-                <div className="my-4 overflow-hidden rounded-xl border border-slate-700/80 shadow-md">
-                  {/* Language bar */}
-                  <div className="flex items-center justify-between border-b border-slate-700/80 bg-slate-800/90 px-4 py-1.5">
-                    <span className="font-mono text-[10.5px] tracking-widest uppercase text-slate-400">
+                <div className="my-2.5 overflow-hidden rounded-xl shadow-md"
+                  style={{ border: "1px solid color-mix(in srgb, currentColor 20%, transparent)" }}
+                >
+                  <div className="flex items-center border-b border-slate-700/80 bg-slate-800/90 px-4 py-1.5">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-slate-400">
                       {match[1]}
                     </span>
                   </div>
@@ -114,9 +135,9 @@ export function MessageContent({
                     PreTag="div"
                     customStyle={{
                       margin: 0,
-                      padding: "14px 16px",
+                      padding: "12px 16px",
                       background: "#0d1117",
-                      fontSize: "12.5px",
+                      fontSize: "12px",
                       lineHeight: "1.65",
                     }}
                   >
@@ -126,13 +147,21 @@ export function MessageContent({
               );
             }
 
-            return className ? (
-              <pre className="my-3 overflow-x-auto rounded-xl border border-slate-700 bg-[#0d1117] p-4 text-[12.5px] leading-relaxed text-[#c9d1d9]">
-                <code {...props}>{children}</code>
-              </pre>
-            ) : (
+            if (className) {
+              return (
+                <pre className="my-2.5 overflow-x-auto rounded-xl bg-[#0d1117] p-4 text-[12px] leading-relaxed text-[#c9d1d9]"
+                  style={{ border: "1px solid color-mix(in srgb, currentColor 15%, transparent)" }}
+                >
+                  <code {...props}>{children}</code>
+                </pre>
+              );
+            }
+
+            // Inline code — semi-transparent chip using currentColor
+            return (
               <code
-                className="rounded-md border border-border/60 bg-surface-3/70 px-1.5 py-0.5 font-mono text-[12.5px] text-inherit"
+                className="rounded px-1.5 py-0.5 font-mono text-[12px] font-semibold text-inherit"
+                style={{ background: "color-mix(in srgb, currentColor 18%, transparent)" }}
                 {...props}
               >
                 {children}

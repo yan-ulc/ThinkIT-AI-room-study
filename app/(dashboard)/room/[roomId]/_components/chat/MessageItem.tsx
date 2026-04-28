@@ -135,7 +135,7 @@ export function MessageItem({
                   ? "bg-primary rounded-tl-sm text-background"
                   : isMine
                     ? "bg-secondary-foreground rounded-tr-sm text-foreground"
-                    : "bg-primary rounded-tl-sm text-background   "
+                    : "bg-primary rounded-tl-sm text-background"
             }`}
           >
             {isQuiz ? (
