@@ -5,7 +5,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { FileText, X } from "lucide-react";
-import { useEffect, useState, type ChangeEvent, type RefObject } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { DocumentContext, RoomDocument } from "../../hooks/useRoomData";
 import { DocumentPreview } from "../docs/DocumentPreview";
@@ -15,9 +15,8 @@ import { UploadButton } from "./UploadButton";
 type DocumentsTabProps = {
   roomId: Id<"rooms">;
   docs: RoomDocument[] | undefined;
-  fileInputRef: RefObject<HTMLInputElement | null>;
   deletingDocId: Id<"documents"> | null;
-  onUpload: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;
+  onUploadFiles: (files: FileList) => Promise<void>;
   onDelete: (
     id: Id<"documents">,
     storageId: Id<"_storage">,
@@ -30,18 +29,19 @@ type DocumentsTabProps = {
     title?: string,
     questionCount?: number,
   ) => Promise<boolean>;
+  isUploading: boolean;
 };
 
 export function DocumentsTab({
   roomId,
   docs,
-  fileInputRef,
   deletingDocId,
-  onUpload,
+  onUploadFiles,
   onDelete,
   onUseDocumentContext,
   generatingQuizForDocId,
   onGenerateQuiz,
+  isUploading,
 }: DocumentsTabProps) {
   const [previewDoc, setPreviewDoc] = useState<RoomDocument | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -64,15 +64,7 @@ export function DocumentsTab({
   return (
     <>
       <div className="space-y-3 p-4">
-        <input
-          type="file"
-          className="hidden"
-          ref={fileInputRef}
-          onChange={onUpload}
-          accept=".pdf,.txt,.doc,.docx"
-        />
-
-        <UploadButton onClick={() => fileInputRef.current?.click()} />
+        <UploadButton onFiles={onUploadFiles} isUploading={isUploading} />
 
         <div className="space-y-2 pt-1">
           {docs === undefined ? (

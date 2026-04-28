@@ -14,8 +14,10 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  ClipboardList,
   Loader2,
   Trophy,
+  XCircle,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -39,6 +41,7 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
   const [userAnswers, setUserAnswers] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [animKey, setAnimKey] = useState(0);
+  const [isReviewing, setIsReviewing] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -46,10 +49,10 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
       setUserAnswers([]);
       setIsSubmitting(false);
       setAnimKey((k) => k + 1);
+      setIsReviewing(false);
     }
   }, [isOpen]);
 
-  // Trigger animation on step change
   const prevStep = useRef(step);
   useEffect(() => {
     if (step !== prevStep.current) {
@@ -99,7 +102,6 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
   const finalScore = Math.round(score());
   const correctCount = Math.round((finalScore / 100) * totalSteps);
 
-  // Grade label
   const grade =
     finalScore >= 90
       ? "Luar biasa! 🏆"
@@ -111,7 +113,8 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[440px] border-white/[0.08] bg-[#0e0e12] p-0 shadow-[0_0_60px_rgba(0,0,0,0.8),0_0_120px_rgba(255,255,255,0.03)] overflow-hidden">
+      {/* bg-card + border-border: theme-aware. rounded-2xl overrides shadcn default rounded-lg */}
+      <DialogContent className="sm:max-w-[440px] rounded-2xl border-border bg-card p-0 shadow-2xl overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>{quiz?.title || "Quiz"}</DialogTitle>
           <DialogDescription>
@@ -121,22 +124,17 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
 
         {quiz === undefined ? (
           <div className="flex justify-center p-12">
-            <Loader2
-              size={20}
-              className="animate-spin text-muted-foreground/40"
-            />
+            <Loader2 size={20} className="animate-spin text-muted-foreground/40" />
           </div>
         ) : quiz === null ? (
           <div className="flex justify-center p-12 text-center">
-            <p className="text-sm text-muted-foreground/60">
-              Quiz tidak ditemukan.
-            </p>
+            <p className="text-sm text-muted-foreground/60">Quiz tidak ditemukan.</p>
           </div>
         ) : (
           <div className="relative">
             {/* Progress bar — top edge */}
             {isQuestion && (
-              <div className="absolute top-0 inset-x-0 h-[2px] bg-white/[0.05]">
+              <div className="absolute top-0 inset-x-0 h-[2px] bg-border">
                 <div
                   className="h-full bg-primary transition-all duration-500 ease-out"
                   style={{ width: `${progressPct}%` }}
@@ -148,25 +146,23 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
             <div
               key={animKey}
               className="p-7 rounded-lg"
-              style={{
-                animation: "quizFadeIn 0.28s cubic-bezier(0.22,1,0.36,1) both",
-              }}
+              style={{ animation: "quizFadeIn 0.28s cubic-bezier(0.22,1,0.36,1) both" }}
             >
-              {/* START */}
+              {/* ── START ── */}
               {step === 0 && (
                 <div className="flex flex-col items-center text-center gap-7 py-4">
-                  {/* Icon */}
                   <div className="relative flex h-20 w-20 items-center justify-center">
                     <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl" />
                     <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10">
                       <Trophy size={28} className="text-primary" />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <h2 className="text-xl font-bold tracking-tight text-foreground">
+                  <div className="w-full space-y-2">
+                    {/* line-clamp-2 prevents long titles from exploding the layout */}
+                    <h2 className="text-xl font-bold tracking-tight text-foreground line-clamp-2 break-words px-2">
                       {quiz.title}
                     </h2>
-                    <p className="text-[13px] text-muted-foreground/60">
+                    <p className="text-[13px] text-muted-foreground/70">
                       {totalSteps} pertanyaan menanti kamu
                     </p>
                   </div>
@@ -179,25 +175,22 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
                 </div>
               )}
 
-              {/* QUESTION */}
+              {/* ── QUESTION ── */}
               {isQuestion && currentQ && (
                 <div className="space-y-7">
-                  {/* Step counter */}
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                    <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
                       Pertanyaan {step} / {totalSteps}
                     </span>
-                    <span className="text-[11px] font-semibold text-muted-foreground/40">
+                    <span className="text-[11px] font-semibold text-muted-foreground/50">
                       {Math.round(progressPct)}%
                     </span>
                   </div>
 
-                  {/* Question */}
                   <h2 className="text-[16px] font-semibold leading-relaxed text-foreground/90">
                     {currentQ.question}
                   </h2>
 
-                  {/* Options */}
                   <div className="flex flex-col gap-2.5">
                     {currentQ.options.map((opt, idx) => {
                       const selected = userAnswers[step - 1] === opt;
@@ -212,38 +205,33 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
                           }}
                           className={`group relative flex items-center gap-3.5 rounded-xl border px-4 py-3.5 text-left text-[14px] font-medium transition-all duration-200 active:scale-[0.99] ${
                             selected
-                              ? "border-primary/50 bg-primary/10 text-primary shadow-[0_0_16px_rgba(var(--primary-rgb),0.12)]"
-                              : "border-white/[0.06] bg-white/[0.03] text-foreground/80 hover:border-white/[0.12] hover:bg-white/[0.06] hover:text-foreground"
+                              ? "border-primary/50 bg-primary/10 text-primary"
+                              : "border-border bg-muted/40 text-foreground/80 hover:bg-muted/70 hover:text-foreground"
                           }`}
                         >
-                          {/* Letter badge */}
                           <span
                             className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold transition-colors duration-200 ${
                               selected
                                 ? "bg-primary/20 text-primary"
-                                : "bg-white/[0.06] text-muted-foreground/60 group-hover:bg-white/[0.1]"
+                                : "bg-muted text-muted-foreground group-hover:bg-accent"
                             }`}
                           >
                             {letters[idx] ?? idx + 1}
                           </span>
                           {opt}
                           {selected && (
-                            <CheckCircle2
-                              size={14}
-                              className="ml-auto shrink-0 text-primary"
-                            />
+                            <CheckCircle2 size={14} className="ml-auto shrink-0 text-primary" />
                           )}
                         </button>
                       );
                     })}
                   </div>
 
-                  {/* Nav buttons */}
                   <div className="flex items-center justify-between pt-1">
                     <button
                       onClick={() => setStep(step - 1)}
                       disabled={step === 1}
-                      className="flex items-center gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-2 text-[13px] font-medium text-foreground/60 transition-all duration-200 hover:border-white/[0.12] hover:bg-white/[0.06] hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                      className="flex items-center gap-1.5 rounded-xl border border-border bg-muted/40 px-4 py-2 text-[13px] font-medium text-foreground/60 transition-all duration-200 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
                     >
                       <ArrowLeft size={13} /> Back
                     </button>
@@ -274,32 +262,20 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
                 </div>
               )}
 
-              {/* RESULT */}
-              {isResult && (
+              {/* ── RESULT ── */}
+              {isResult && !isReviewing && (
                 <div className="flex flex-col items-center text-center gap-6 py-4">
-                  {/* Score ring */}
                   <div className="relative flex h-28 w-28 items-center justify-center">
                     <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl" />
-                    <svg
-                      className="absolute inset-0 -rotate-90"
-                      viewBox="0 0 100 100"
-                    >
+                    <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
                       <circle
-                        cx="50"
-                        cy="50"
-                        r="44"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="5"
-                        className="text-white/[0.06]"
+                        cx="50" cy="50" r="44"
+                        fill="none" stroke="currentColor" strokeWidth="5"
+                        className="text-border"
                       />
                       <circle
-                        cx="50"
-                        cy="50"
-                        r="44"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="5"
+                        cx="50" cy="50" r="44"
+                        fill="none" stroke="currentColor" strokeWidth="5"
                         strokeLinecap="round"
                         strokeDasharray={`${2 * Math.PI * 44}`}
                         strokeDashoffset={`${2 * Math.PI * 44 * (1 - finalScore / 100)}`}
@@ -307,9 +283,7 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
                       />
                     </svg>
                     <div className="relative text-center">
-                      <p className="text-3xl font-bold text-foreground">
-                        {finalScore}
-                      </p>
+                      <p className="text-3xl font-bold text-foreground">{finalScore}</p>
                       <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">
                         Skor
                       </p>
@@ -317,22 +291,148 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <h2 className="text-xl font-bold text-foreground">
-                      {grade}
-                    </h2>
-                    <p className="text-[13px] text-muted-foreground/60">
+                    <h2 className="text-xl font-bold text-foreground">{grade}</h2>
+                    <p className="text-[13px] text-muted-foreground/70">
                       {correctCount} dari {totalSteps} jawaban benar
                     </p>
                   </div>
 
-                  <div className="flex w-full gap-2.5 pt-2">
+                  {/* Action buttons */}
+                  <div className="flex w-full flex-col gap-2">
+                    {/* Review answers button */}
+                    <button
+                      onClick={() => setIsReviewing(true)}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 py-2.5 text-[13px] font-semibold text-foreground/80 transition-all duration-200 hover:bg-muted hover:text-foreground active:scale-[0.98]"
+                    >
+                      <ClipboardList size={14} />
+                      Lihat Jawabanku
+                    </button>
+                    <div className="flex gap-2.5">
+                      <button
+                        onClick={() => {
+                          setStep(0);
+                          setUserAnswers([]);
+                          setAnimKey((k) => k + 1);
+                        }}
+                        className="flex-1 rounded-xl border border-border bg-muted/40 py-2.5 text-[13px] font-semibold text-foreground/70 transition-all duration-200 hover:bg-muted hover:text-foreground active:scale-[0.98]"
+                      >
+                        Ulangi
+                      </button>
+                      <button
+                        onClick={onClose}
+                        className="flex-1 rounded-xl bg-primary py-2.5 text-[13px] font-semibold text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                      >
+                        Selesai
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── REVIEW ── */}
+              {isResult && isReviewing && (
+                <div className="flex flex-col gap-4">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[13px] font-semibold text-foreground">
+                        Review Jawaban
+                      </p>
+                      <p className="text-[11px] text-muted-foreground/60">
+                        {correctCount} benar · {totalSteps - correctCount} salah
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setIsReviewing(false)}
+                      className="rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-[12px] font-medium text-foreground/60 transition-all hover:bg-muted hover:text-foreground"
+                    >
+                      ← Kembali
+                    </button>
+                  </div>
+
+                  {/* Question list — scrollable */}
+                  <div className="flex flex-col gap-3 max-h-[340px] overflow-y-auto pr-1">
+                    {questions.map((q, qi) => {
+                      const userPick = userAnswers[qi];
+                      const isCorrect = userPick === q.answer;
+                      const letters = ["A", "B", "C", "D"];
+                      return (
+                        <div
+                          key={qi}
+                          style={{
+                            animation: `quizFadeIn 0.25s cubic-bezier(0.22,1,0.36,1) ${qi * 40}ms both`,
+                          }}
+                          className="rounded-xl border border-border bg-muted/30 p-4"
+                        >
+                          {/* Question row */}
+                          <div className="flex items-start gap-2.5 mb-3">
+                            <span
+                              className={`mt-0.5 shrink-0 rounded-full p-0.5 ${
+                                isCorrect ? "text-emerald-500" : "text-rose-500"
+                              }`}
+                            >
+                              {isCorrect ? (
+                                <CheckCircle2 size={15} />
+                              ) : (
+                                <XCircle size={15} />
+                              )}
+                            </span>
+                            <p className="text-[13px] font-medium leading-snug text-foreground">
+                              {qi + 1}. {q.question}
+                            </p>
+                          </div>
+
+                          {/* Options — only highlight user's pick */}
+                          <div className="flex flex-col gap-1.5 pl-6">
+                            {q.options.map((opt, oi) => {
+                              const isPicked = opt === userPick;
+                              return (
+                                <div
+                                  key={oi}
+                                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] font-medium transition-colors ${
+                                    isPicked
+                                      ? isCorrect
+                                        ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30"
+                                        : "bg-rose-500/10 text-rose-600 border border-rose-500/30"
+                                      : "text-muted-foreground/60"
+                                  }`}
+                                >
+                                  <span
+                                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-bold ${
+                                      isPicked
+                                        ? isCorrect
+                                          ? "bg-emerald-500/20 text-emerald-600"
+                                          : "bg-rose-500/20 text-rose-600"
+                                        : "bg-muted text-muted-foreground/50"
+                                    }`}
+                                  >
+                                    {letters[oi] ?? oi + 1}
+                                  </span>
+                                  {opt}
+                                  {isPicked && (
+                                    <span className="ml-auto shrink-0 text-[10px] font-semibold uppercase tracking-wide">
+                                      {isCorrect ? "✓ Benar" : "✗ Salah"}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Bottom actions */}
+                  <div className="flex gap-2.5 pt-1">
                     <button
                       onClick={() => {
                         setStep(0);
                         setUserAnswers([]);
+                        setIsReviewing(false);
                         setAnimKey((k) => k + 1);
                       }}
-                      className="flex-1 rounded-xl border border-white/[0.08] bg-white/[0.04] py-2.5 text-[13px] font-semibold text-foreground/70 transition-all duration-200 hover:bg-white/[0.07] hover:text-foreground active:scale-[0.98]"
+                      className="flex-1 rounded-xl border border-border bg-muted/40 py-2.5 text-[13px] font-semibold text-foreground/70 transition-all duration-200 hover:bg-muted hover:text-foreground active:scale-[0.98]"
                     >
                       Ulangi
                     </button>

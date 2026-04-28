@@ -17,9 +17,8 @@ type RightPanelProps = {
   roomId: Id<"rooms">;
   docs: RoomDocument[] | undefined;
   members: RoomMember[] | undefined;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
   deletingDocId: Id<"documents"> | null;
-  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  onUploadFiles: (files: FileList) => Promise<void>;
   onDelete: (
     id: Id<"documents">,
     storageId: Id<"_storage">,
@@ -32,6 +31,7 @@ type RightPanelProps = {
     title?: string,
     questionCount?: number,
   ) => Promise<boolean>;
+  isUploading: boolean;
 };
 
 export function RightPanel({
@@ -40,13 +40,13 @@ export function RightPanel({
   roomId,
   docs,
   members,
-  fileInputRef,
   deletingDocId,
-  onUpload,
+  onUploadFiles,
   onDelete,
   onUseDocumentContext,
   generatingQuizForDocId,
   onGenerateQuiz,
+  isUploading,
 }: RightPanelProps) {
   const tabs = [
     {
@@ -112,13 +112,13 @@ export function RightPanel({
           <DocumentsTab
             roomId={roomId}
             docs={docs}
-            fileInputRef={fileInputRef}
             deletingDocId={deletingDocId}
-            onUpload={onUpload}
+            onUploadFiles={onUploadFiles}
             onDelete={onDelete}
             onUseDocumentContext={onUseDocumentContext}
             generatingQuizForDocId={generatingQuizForDocId}
             onGenerateQuiz={onGenerateQuiz}
+            isUploading={isUploading}
           />
         ) : rightTab === "members" ? (
           <MembersTab roomId={roomId} members={members} />

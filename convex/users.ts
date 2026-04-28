@@ -55,3 +55,44 @@ export const currentUser = query({
       .unique();
   },
 });
+
+export const getUserStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) return null;
+
+    const roomMembers = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const attempts = await ctx.db
+      .query("attempts")
+      .withIndex("by_userId", (q) => q.eq("userId", identity.subject))
+      .collect();
+
+    const totalRooms = roomMembers.length;
+    const totalQuizzesTaken = attempts.length;
+    const averageScore =
+      attempts.length > 0
+        ? Math.round(
+            attempts.reduce((acc, curr) => acc + curr.score, 0) /
+              attempts.length
+          )
+        : 0;
+
+    return {
+      totalRooms,
+      totalQuizzesTaken,
+      averageScore,
+    };
+  },
+});

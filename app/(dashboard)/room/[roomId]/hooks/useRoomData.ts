@@ -5,6 +5,7 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 export type RoomMessage = {
   _id: Id<"messages">;
@@ -55,6 +56,7 @@ export function useRoomData() {
   const [rightTab, setRightTab] = useState<"documents" | "members" | "quizzes">(
     "documents",
   );
+  const [isUploading, setIsUploading] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<Id<"documents"> | null>(
     null,
   );
@@ -139,11 +141,10 @@ export function useRoomData() {
     void markRoomRead({ roomId });
   }, [roomId, room, messages, markRoomRead]);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadFile = async (file: File) => {
+    setIsUploading(true);
 
-    try {
+    const promise = (async () => {
       const postUrl = await generateUploadUrl();
 
       const result = await fetch(postUrl, {
@@ -151,6 +152,9 @@ export function useRoomData() {
         headers: { "Content-Type": file.type },
         body: file,
       });
+      
+      if (!result.ok) throw new Error("Upload failed");
+      
       const { storageId } = await result.json();
 
       await saveDoc({
@@ -158,13 +162,34 @@ export function useRoomData() {
         storageId,
         name: file.name,
       });
+    })();
 
-      e.target.value = "";
-      alert("Upload sukses, Ngab!");
+    toast.promise(promise, {
+      loading: `Uploading ${file.name}...`,
+      success: "File successfully uploaded!",
+      error: "Failed to upload file.",
+    });
+
+    try {
+      await promise;
     } catch (err) {
       console.error(err);
-      alert("Gagal upload!");
+    } finally {
+      setIsUploading(false);
     }
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadFile(file);
+    e.target.value = "";
+  };
+
+  const handleUploadFiles = async (files: FileList) => {
+    const file = files[0];
+    if (!file) return;
+    await uploadFile(file);
   };
 
   const handleDeleteDoc = async (
@@ -221,9 +246,11 @@ export function useRoomData() {
     clearLastGeneratedQuiz: () => setLastGeneratedQuiz(null),
     handleGenerateQuiz,
     handleUpload,
+    handleUploadFiles,
     handleDeleteDoc,
     handleUseDocumentContext,
     clearDocumentContext,
     cancelDocumentContext,
+    isUploading,
   };
 }

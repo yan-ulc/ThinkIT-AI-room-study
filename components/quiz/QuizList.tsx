@@ -17,6 +17,7 @@ export function QuizList({
   const quizzes = useQuery(api.quiz.getByRoomId, { roomId });
   const members = useQuery(api.rooms.getMembers, { roomId });
   const deleteQuiz = useMutation(api.quiz.deleteQuiz);
+  const bestScores = useQuery(api.quiz.getBestScores) ?? {};
 
   const [selectedQuizId, setSelectedQuizId] = useState<Id<"quizzes"> | null>(null);
   const [deletingId, setDeletingId] = useState<Id<"quizzes"> | null>(null);
@@ -86,6 +87,7 @@ export function QuizList({
               <QuizCard
                 title={quiz.title}
                 questionCount={quiz.questions.length}
+                bestScore={bestScores[quiz._id]}
                 onStart={() => setSelectedQuizId(quiz._id)}
                 onDelete={isAdmin ? () => handleDelete(quiz._id, quiz.title) : undefined}
               />
