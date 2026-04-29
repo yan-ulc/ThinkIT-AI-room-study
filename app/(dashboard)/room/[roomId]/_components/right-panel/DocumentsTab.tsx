@@ -14,6 +14,8 @@ import { UploadButton } from "./UploadButton";
 
 type DocumentsTabProps = {
   roomId: Id<"rooms">;
+  room: any;
+  memberStatus?: "active" | "removed";
   docs: RoomDocument[] | undefined;
   deletingDocId: Id<"documents"> | null;
   onUploadFiles: (files: FileList) => Promise<void>;
@@ -34,6 +36,8 @@ type DocumentsTabProps = {
 
 export function DocumentsTab({
   roomId,
+  room,
+  memberStatus,
   docs,
   deletingDocId,
   onUploadFiles,
@@ -64,7 +68,15 @@ export function DocumentsTab({
   return (
     <>
       <div className="space-y-3 p-4">
-        <UploadButton onFiles={onUploadFiles} isUploading={isUploading} />
+        {room?.status !== "closed" && memberStatus !== "removed" ? (
+          <UploadButton onFiles={onUploadFiles} isUploading={isUploading} />
+        ) : (
+          <div className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-center text-[11px] text-text-3">
+            {memberStatus === "removed"
+              ? "Upload disabled (removed member)"
+              : "Room is closed. Uploads disabled."}
+          </div>
+        )}
 
         <div className="space-y-2 pt-1">
           {docs === undefined ? (
@@ -162,6 +174,14 @@ export function DocumentsTab({
                       fileUrl: previewDoc.fileUrl,
                     }}
                     onAskAi={async (selectedText) => {
+                      if (room?.status === "closed") {
+                        alert("Room is closed. You cannot ask AI.");
+                        return;
+                      }
+                      if (memberStatus === "removed") {
+                        alert("You are no longer a member of this room.");
+                        return;
+                      }
                       const selectionId = await createSelection({
                         roomId,
                         documentId: previewDoc._id,
@@ -179,9 +199,17 @@ export function DocumentsTab({
                     }}
                     isGeneratingQuiz={generatingQuizForDocId === previewDoc._id}
                     isAnyQuizGenerating={!!generatingQuizForDocId}
-                    onGenerateQuiz={(title, questionCount) =>
-                      onGenerateQuiz(previewDoc._id, title, questionCount)
-                    }
+                    onGenerateQuiz={(title, questionCount) => {
+                      if (room?.status === "closed") {
+                        alert("Room is closed. You cannot generate a quiz.");
+                        return Promise.resolve(false);
+                      }
+                      if (memberStatus === "removed") {
+                        alert("You are no longer a member of this room.");
+                        return Promise.resolve(false);
+                      }
+                      return onGenerateQuiz(previewDoc._id, title, questionCount);
+                    }}
                   />
                 </div>
 

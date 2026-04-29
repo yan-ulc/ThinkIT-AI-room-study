@@ -34,6 +34,9 @@ export default function RoomPage() {
     return <ChatRoomSkeleton />;
   }
 
+  const myMembership = members?.find((m) => m.isMe);
+  const memberStatus = myMembership?.status;
+
   return (
     <>
       <div className="chat-ambient relative flex flex-1 overflow-hidden">
@@ -41,6 +44,8 @@ export default function RoomPage() {
         <ChatSection
           roomId={roomId}
           roomName={room.name}
+          roomStatus={room.status}
+          memberStatus={memberStatus}
           members={members}
           messages={messages}
           sendMessage={sendMessage}
@@ -53,6 +58,8 @@ export default function RoomPage() {
           rightTab={rightTab}
           setRightTab={setRightTab}
           roomId={roomId}
+          room={room}
+          memberStatus={memberStatus}
           docs={docs}
           members={members}
           deletingDocId={deletingDocId}

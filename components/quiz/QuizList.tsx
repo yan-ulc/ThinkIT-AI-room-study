@@ -9,9 +9,13 @@ import { Loader2, BrainCircuit, Sparkles } from "lucide-react";
 
 export function QuizList({
   roomId,
+  room,
+  memberStatus,
   generatingQuizForDocId,
 }: {
   roomId: Id<"rooms">;
+  room: any;
+  memberStatus?: "active" | "removed";
   generatingQuizForDocId: Id<"documents"> | null;
 }) {
   const quizzes = useQuery(api.quiz.getByRoomId, { roomId });
@@ -22,7 +26,7 @@ export function QuizList({
   const [selectedQuizId, setSelectedQuizId] = useState<Id<"quizzes"> | null>(null);
   const [deletingId, setDeletingId] = useState<Id<"quizzes"> | null>(null);
 
-  const isAdmin = members?.some((m) => m.isMe && m.role === "admin") ?? false;
+  const isAdmin = members?.some((m) => m.isMe && (m.role === "admin" || m.role === "owner") && m.status !== "removed") ?? false;
 
   const handleDelete = async (quizId: Id<"quizzes">, title: string) => {
     const confirmed = window.confirm(`Hapus quiz "${title}"? Semua attempt juga akan dihapus.`);

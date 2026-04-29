@@ -56,7 +56,7 @@ export default function DashboardPage() {
   const rooms = useQuery(api.rooms.getDashboardRooms);
   const me = useQuery(api.users.currentUser);
   const createRoom = useMutation(api.rooms.create);
-  const joinRoom = useMutation(api.rooms.join);
+  const joinRoom = useMutation(api.rooms.joinById);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [roomName, setRoomName] = useState("");
@@ -87,7 +87,7 @@ export default function DashboardPage() {
     if (!code) return;
     setIsJoining(true);
     try {
-      await joinRoom({ roomId: code as Id<"rooms"> });
+      await joinRoom({ roomId: code });
       setIsJoinOpen(false);
       setInviteCode("");
       router.push(`/room/${code}`);

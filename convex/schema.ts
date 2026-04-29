@@ -18,13 +18,17 @@ export default defineSchema({
     description: v.optional(v.string()),
     isPrivate: v.boolean(),
     createdBy: v.id("users"),
+    status: v.optional(v.union(v.literal("active"), v.literal("closed"))),
+    ownerId: v.optional(v.id("users")),
   }),
 
   // 3. ROOM MEMBERS - Many-to-Many Bridge
   roomMembers: defineTable({
     roomId: v.id("rooms"),
     userId: v.id("users"),
-    role: v.union(v.literal("admin"), v.literal("member")),
+    role: v.union(v.literal("owner"), v.literal("admin"), v.literal("member")),
+    status: v.optional(v.union(v.literal("active"), v.literal("removed"))),
+    isHidden: v.optional(v.boolean()),
     unreadCount: v.optional(v.number()),
     mentionCount: v.optional(v.number()),
     lastReadAt: v.optional(v.number()),

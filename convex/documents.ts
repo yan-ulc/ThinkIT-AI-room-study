@@ -40,6 +40,15 @@ export const create = mutation({
 
     if (!membership)
       throw new Error("Akses ditolak: Kamu bukan member room ini!");
+    if (membership.status === "removed") {
+      throw new Error("User is no longer an active member of this room");
+    }
+
+    const room = await ctx.db.get(args.roomId);
+    if (!room) throw new Error("Room not found");
+    if (room.status === "closed") {
+      throw new Error("This room is closed. You can only view content.");
+    }
 
     // Ambil URL publik dari storageId untuk referensi download/view
     const fileUrl = (await ctx.storage.getUrl(args.storageId)) as string;
@@ -217,10 +226,19 @@ export const createSelection = mutation({
       )
       .unique();
     if (!membership) throw new Error("Forbidden: not a room member");
+    if (membership.status === "removed") {
+      throw new Error("User is no longer an active member of this room");
+    }
 
     const document = await ctx.db.get(args.documentId);
     if (!document || document.roomId !== args.roomId) {
       throw new Error("Document not found in this room");
+    }
+
+    const room = await ctx.db.get(args.roomId);
+    if (!room) throw new Error("Room not found");
+    if (room.status === "closed") {
+      throw new Error("This room is closed. You can only view content.");
     }
 
     const normalizedText = args.selectedText.replace(/\s+/g, " ").trim();

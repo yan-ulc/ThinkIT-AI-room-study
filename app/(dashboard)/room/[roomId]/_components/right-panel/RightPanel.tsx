@@ -15,6 +15,8 @@ type RightPanelProps = {
   rightTab: "documents" | "members" | "quizzes";
   setRightTab: (tab: "documents" | "members" | "quizzes") => void;
   roomId: Id<"rooms">;
+  room: any;
+  memberStatus?: "active" | "removed";
   docs: RoomDocument[] | undefined;
   members: RoomMember[] | undefined;
   deletingDocId: Id<"documents"> | null;
@@ -38,6 +40,8 @@ export function RightPanel({
   rightTab,
   setRightTab,
   roomId,
+  room,
+  memberStatus,
   docs,
   members,
   deletingDocId,
@@ -111,6 +115,8 @@ export function RightPanel({
         {rightTab === "documents" ? (
           <DocumentsTab
             roomId={roomId}
+            room={room}
+            memberStatus={memberStatus}
             docs={docs}
             deletingDocId={deletingDocId}
             onUploadFiles={onUploadFiles}
@@ -121,10 +127,12 @@ export function RightPanel({
             isUploading={isUploading}
           />
         ) : rightTab === "members" ? (
-          <MembersTab roomId={roomId} members={members} />
+          <MembersTab roomId={roomId} room={room} members={members} />
         ) : (
           <QuizList
             roomId={roomId}
+            room={room}
+            memberStatus={memberStatus}
             generatingQuizForDocId={generatingQuizForDocId}
           />
         )}
