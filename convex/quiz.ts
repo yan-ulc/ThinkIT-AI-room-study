@@ -117,6 +117,30 @@ export const save = mutation({
     const userId = (await ctx.auth.getUserIdentity())?.subject;
     if (!userId) throw new Error("Unauthorized");
 
+    const room = await ctx.db.get(args.roomId);
+    if (!room) throw new Error("Room not found");
+    if (room.status === "closed") {
+      throw new Error("This room is closed. You can only view content.");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", userId))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    const membership = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", args.roomId).eq("userId", user._id),
+      )
+      .unique();
+
+    if (!membership) throw new Error("Forbidden: not a room member");
+    if (membership.status === "removed") {
+      throw new Error("User is no longer an active member of this room");
+    }
+
     return await ctx.db.insert("quizzes", {
       documentId: args.documentId,
       roomId: args.roomId,
@@ -152,8 +176,8 @@ export const deleteQuiz = mutation({
       .unique();
 
     if (!membership) throw new Error("Kamu bukan member room ini");
-    if (membership.role !== "admin")
-      throw new Error("Hanya admin yang bisa menghapus quiz");
+    if (membership.role !== "admin" && membership.role !== "owner")
+      throw new Error("Hanya admin atau owner yang bisa menghapus quiz");
 
     // Hapus semua attempts terkait quiz ini
     const attempts = await ctx.db
@@ -202,6 +226,17 @@ export const generate = action({
         documentId: args.documentId,
       });
     if (!document) throw new Error("Document not found");
+
+    const room = await ctx.runQuery(api.rooms.getById, { roomId: document.roomId });
+    if (!room) throw new Error("Room not found");
+    if (room.status === "closed") {
+      throw new Error("This room is closed. You can only view content.");
+    }
+
+    const isActiveMember = await ctx.runQuery(api.rooms.checkActiveMembership, { roomId: document.roomId });
+    if (!isActiveMember) {
+      throw new Error("User is no longer an active member of this room");
+    }
 
     // 3. Ambil quiz sebelumnya (optional - anti duplicate)
     const previousQuizzes: Doc<"quizzes">[] = await ctx.runQuery(

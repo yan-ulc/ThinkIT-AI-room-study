@@ -4,6 +4,7 @@ import { SignInButton, SignUpButton, useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
+import DocsAsk from "@/components/DocsAsk";
 
 /* ─────────────────────────────────────────────
    DESIGN TOKENS
@@ -1945,6 +1946,7 @@ export default function App() {
       <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
         <Nav />
         <Hero />
+        <DocsAsk />
         <ProblemSolution />
         <HowItWorks />
         <Features />

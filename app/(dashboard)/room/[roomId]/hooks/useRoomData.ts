@@ -32,7 +32,8 @@ export type RoomMember = {
   _id: Id<"users">;
   displayName: string;
   imageUrl?: string;
-  role: "admin" | "member";
+  role: "owner" | "admin" | "member";
+  status: "active" | "removed";
   isMe: boolean;
 };
 

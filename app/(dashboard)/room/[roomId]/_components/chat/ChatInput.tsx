@@ -19,6 +19,8 @@ type SelectionContext = {
 type ChatInputProps = {
   onSubmitText: (text: string) => Promise<void>;
   roomName: string;
+  roomStatus?: "active" | "closed";
+  memberStatus?: "active" | "removed";
   replyingTo: RoomMessage | null;
   setReplyingTo: (value: RoomMessage | null) => void;
   selectionContext: SelectionContext;
@@ -28,6 +30,8 @@ type ChatInputProps = {
 export function ChatInput({
   onSubmitText,
   roomName,
+  roomStatus,
+  memberStatus,
   replyingTo,
   setReplyingTo,
   selectionContext,
@@ -43,12 +47,12 @@ export function ChatInput({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (selectionContext) {
+    if (selectionContext && roomStatus !== "closed" && memberStatus !== "removed") {
       inputRef.current?.focus();
     }
-  }, [selectionContext]);
+  }, [selectionContext, roomStatus, memberStatus]);
 
-  const isSubmitDisabled = !draft.trim() || isSending;
+  const isSubmitDisabled = !draft.trim() || isSending || roomStatus === "closed" || memberStatus === "removed";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,12 +113,17 @@ export function ChatInput({
               ref={inputRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
+              disabled={roomStatus === "closed" || memberStatus === "removed"}
               placeholder={
-                replyingTo
-                  ? `Reply to ${replyingToLabel}…`
-                  : `Ask something in #${roomName}…`
+                memberStatus === "removed"
+                  ? "You are no longer a member of this room."
+                  : roomStatus === "closed"
+                  ? "This room is closed. You can only view content."
+                  : replyingTo
+                    ? `Reply to ${replyingToLabel}…`
+                    : `Ask something in #${roomName}…`
               }
-              className="flex-1 border-none bg-transparent px-2 text-[14px] text-text outline-none placeholder:text-text-3"
+              className="flex-1 border-none bg-transparent px-2 text-[14px] text-text outline-none placeholder:text-text-3 disabled:opacity-50"
             />
 
             <Button
@@ -132,9 +141,13 @@ export function ChatInput({
 
           {/* Subtle hint */}
           <p className="mt-2 px-2 text-[11px] text-text-3">
-            {isSubmitDisabled
-              ? "Type a question or thought to continue the discussion."
-              : "Press Enter to send."}
+            {memberStatus === "removed"
+              ? "You can still view previous content, but cannot interact."
+              : roomStatus === "closed"
+              ? "This room has been closed by the owner."
+              : isSubmitDisabled
+                ? "Type a question or thought to continue the discussion."
+                : "Press Enter to send."}
           </p>
         </div>
       </div>

@@ -15,6 +15,8 @@ import { useChatLogic } from "./useChatLogic";
 type ChatSectionProps = {
   roomId: Id<"rooms">;
   roomName: string;
+  roomStatus?: "active" | "closed";
+  memberStatus?: "active" | "removed";
   members?: RoomMember[];
   messages: RoomMessage[];
   sendMessage: (args: {
@@ -31,6 +33,8 @@ type ChatSectionProps = {
 export function ChatSection({
   roomId,
   roomName,
+  roomStatus,
+  memberStatus,
   members,
   messages,
   sendMessage,
@@ -75,6 +79,8 @@ export function ChatSection({
       <ChatInput
         onSubmitText={handleSend}
         roomName={roomName}
+        roomStatus={roomStatus}
+        memberStatus={memberStatus}
         replyingTo={replyingTo}
         setReplyingTo={setReplyingTo}
         selectionContext={selectionContext}

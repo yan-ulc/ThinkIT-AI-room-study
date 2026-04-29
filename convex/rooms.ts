@@ -37,13 +37,17 @@ export const create = mutation({
       description: args.description,
       isPrivate: false, // Default untuk MVP
       createdBy: user._id,
+      status: "active",
+      ownerId: user._id,
     });
 
     // Auto Join Creator sebagai Admin (Step 2.2)
     await ctx.db.insert("roomMembers", {
       roomId,
       userId: user._id,
-      role: "admin",
+      role: "owner",
+      status: "active",
+      isHidden: false,
       unreadCount: 0,
       mentionCount: 0,
       lastReadAt: Date.now(),
@@ -81,6 +85,7 @@ export const join = mutation({
       roomId: args.roomId,
       userId: user._id,
       role: "member",
+      status: "active",
       unreadCount: 0,
       mentionCount: 0,
       lastReadAt: Date.now(),
@@ -111,6 +116,7 @@ export const getMyRooms = query({
     // Join ke tabel rooms + attach unread/mention counters for sidebar badges.
     const rooms = await Promise.all(
       memberships.map(async (m) => {
+        if (m.isHidden) return null;
         const room = await ctx.db.get(m.roomId);
         if (!room) return null;
 
@@ -148,6 +154,7 @@ export const getDashboardRooms = query({
 
     const rooms = await Promise.all(
       memberships.map(async (membership) => {
+        if (membership.isHidden) return null;
         const room = await ctx.db.get(membership.roomId);
         if (!room) return null;
 
@@ -211,6 +218,30 @@ export const getById = query({
   },
 });
 
+export const checkActiveMembership = query({
+  args: { roomId: v.id("rooms") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return false;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) return false;
+
+    const membership = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", args.roomId).eq("userId", user._id),
+      )
+      .unique();
+
+    return !!membership && membership.status !== "removed";
+  },
+});
+
+
 // Fungsi untuk join room pake ID (Step 2.3 - Logic join diperkuat)
 export const joinById = mutation({
   args: { roomId: v.string() }, // Kita terima string dulu buat divalidasi
@@ -246,6 +277,7 @@ export const joinById = mutation({
       roomId: normalizedId,
       userId: user._id,
       role: "member",
+      status: "active",
       unreadCount: 0,
       mentionCount: 0,
       lastReadAt: Date.now(),
@@ -316,6 +348,7 @@ export const getMembers = query({
           displayName: user.displayName,
           imageUrl: user.imageUrl,
           role: m.role,
+          status: m.status ?? "active",
           isMe: m.userId === currentUser._id,
         };
       }),
@@ -340,6 +373,11 @@ export const leaveRoom = mutation({
 
     if (!user) throw new Error("User tidak ditemukan");
 
+    const room = await ctx.db.get(args.roomId);
+    if (room && room.ownerId === user._id) {
+      throw new Error("Owner cannot leave the room");
+    }
+
     // Cari data membership-nya
     const membership = await ctx.db
       .query("roomMembers")
@@ -350,9 +388,108 @@ export const leaveRoom = mutation({
 
     if (!membership) throw new Error("Lu emang gak ada di room ini, Ngab");
 
-    // Hapus dari room
-    await ctx.db.delete(membership._id);
+    // Hapus dari room dengan soft-delete (status: "removed")
+    await ctx.db.patch(membership._id, { status: "removed" });
 
+    return { success: true };
+  },
+});
+
+export const closeRoom = mutation({
+  args: { roomId: v.id("rooms") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    const room = await ctx.db.get(args.roomId);
+    if (!room) throw new Error("Room not found");
+
+    if (room.ownerId !== user._id) {
+      throw new Error("Only the owner can close the room");
+    }
+
+    if (room.status === "closed") {
+      return { success: true, message: "Room is already closed" };
+    }
+
+    await ctx.db.patch(args.roomId, { status: "closed" });
+    return { success: true };
+  },
+});
+
+export const hideRoom = mutation({
+  args: { roomId: v.id("rooms") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    const room = await ctx.db.get(args.roomId);
+    if (!room) throw new Error("Room not found");
+
+    if (room.ownerId !== user._id) {
+      throw new Error("Only the owner can delete/hide the room");
+    }
+
+    const membership = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", args.roomId).eq("userId", user._id),
+      )
+      .unique();
+
+    if (!membership) throw new Error("Membership not found");
+
+    await ctx.db.patch(membership._id, { isHidden: true });
+    return { success: true };
+  },
+});
+
+export const removeMember = mutation({
+  args: { roomId: v.id("rooms"), memberId: v.id("users") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) throw new Error("User not found");
+
+    const room = await ctx.db.get(args.roomId);
+    if (!room) throw new Error("Room not found");
+
+    if (room.ownerId !== user._id) {
+      throw new Error("Only the owner can remove members");
+    }
+
+    if (user._id === args.memberId) {
+      throw new Error("Owner cannot remove themselves");
+    }
+
+    const membership = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", args.roomId).eq("userId", args.memberId),
+      )
+      .unique();
+
+    if (!membership) throw new Error("Member is not in the room");
+
+    // Hapus dari room dengan soft-delete (status: "removed")
+    await ctx.db.patch(membership._id, { status: "removed" });
     return { success: true };
   },
 });

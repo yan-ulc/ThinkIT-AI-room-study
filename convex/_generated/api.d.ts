@@ -11,6 +11,7 @@
 import type * as ai from "../ai.js";
 import type * as documents from "../documents.js";
 import type * as messages from "../messages.js";
+import type * as migrateOwner from "../migrateOwner.js";
 import type * as quiz from "../quiz.js";
 import type * as rag from "../rag.js";
 import type * as rag_node from "../rag_node.js";
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   documents: typeof documents;
   messages: typeof messages;
+  migrateOwner: typeof migrateOwner;
   quiz: typeof quiz;
   rag: typeof rag;
   rag_node: typeof rag_node;

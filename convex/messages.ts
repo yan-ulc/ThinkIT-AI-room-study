@@ -26,6 +26,9 @@ export const send = mutation({
 
     const room = await ctx.db.get(args.roomId);
     if (!room) throw new Error("Room not found");
+    if (room.status === "closed") {
+      throw new Error("This room is closed. You can only view content.");
+    }
 
     const membership = await ctx.db
       .query("roomMembers")
@@ -36,6 +39,9 @@ export const send = mutation({
 
     if (!membership) {
       throw new Error("Forbidden: You are not a member of this room");
+    }
+    if (membership.status === "removed") {
+      throw new Error("User is no longer an active member of this room");
     }
 
     let validatedReplyToId: typeof args.replyToId = undefined;
@@ -256,6 +262,24 @@ export const sendQuizBroadcast = mutation({
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
       .unique();
     if (!user) throw new Error("User not found");
+
+    const room = await ctx.db.get(args.roomId);
+    if (!room) throw new Error("Room not found");
+    if (room.status === "closed") {
+      throw new Error("This room is closed. You can only view content.");
+    }
+
+    const membership = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", args.roomId).eq("userId", user._id),
+      )
+      .unique();
+
+    if (!membership) throw new Error("Forbidden: You are not a member of this room");
+    if (membership.status === "removed") {
+      throw new Error("User is no longer an active member of this room");
+    }
 
     // Simpan pesan broadcast
     const messageId = await ctx.db.insert("messages", {
