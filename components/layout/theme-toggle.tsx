@@ -9,7 +9,7 @@ type ThemeToggleProps = {
 };
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark, toggleMode } = useTheme();
   const [mounted, setMounted] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
 
@@ -22,12 +22,12 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
   function handleClick() {
     if (btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      toggleTheme({
+      toggleMode({
         x: Math.round(rect.left + rect.width / 2),
         y: Math.round(rect.top + rect.height / 2),
       });
     } else {
-      toggleTheme();
+      toggleMode();
     }
   }
 

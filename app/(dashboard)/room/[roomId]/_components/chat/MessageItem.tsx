@@ -130,18 +130,18 @@ export function MessageItem({
           <div
             className={`relative w-full rounded-xl px-4 py-3 text-[14px] leading-relaxed shadow-sm transition-colors ${
               isQuiz
-                ? "bg-primary rounded-tl-sm text-background"
+                ? "bg-primary rounded-tl-sm text-primary-foreground"
                 : isAi
-                  ? "bg-primary rounded-tl-sm text-background"
+                  ? "bg-muted rounded-tl-sm text-foreground"
                   : isMine
-                    ? "bg-secondary-foreground rounded-tr-sm text-foreground"
-                    : "bg-primary rounded-tl-sm text-background"
+                    ? "bg-primary rounded-tr-sm text-primary-foreground"
+                    : "bg-card rounded-tl-sm text-card-foreground border border-border/60"
             }`}
           >
             {isQuiz ? (
               <div className="flex flex-col gap-3 min-w-50">
                 <div className="flex items-center gap-2">
-                  <BrainCircuit size={18} className="text-primary" />
+                  <BrainCircuit size={18} className="text-primary-foreground" />
                   <span className="font-semibold">
                     {msg.metadata?.quizTitle || "New Quiz"}
                   </span>

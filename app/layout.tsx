@@ -19,7 +19,19 @@ export default function RootLayout({
          */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `document.documentElement.classList.add('no-theme-init');`,
+            __html: `(function(){
+  var root = document.documentElement;
+  root.classList.add('no-theme-init');
+  try {
+    var t = localStorage.getItem('thinkit-theme') || 'astro-vista';
+    var m = localStorage.getItem('thinkit-mode') || 'light';
+    root.setAttribute('data-theme', t);
+    root.setAttribute('data-mode', m);
+  } catch(e) {
+    root.setAttribute('data-theme', 'astro-vista');
+    root.setAttribute('data-mode', 'light');
+  }
+})();`,
           }}
         />
       </head>

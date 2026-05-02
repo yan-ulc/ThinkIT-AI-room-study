@@ -1,135 +1,158 @@
 "use client";
 
 import {
-  ThemeProvider as NextThemesProvider,
-  useTheme as useNextTheme,
-} from "next-themes";
-import { useCallback, useEffect } from "react";
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
-type Theme = "light" | "dark" | "system";
-type ResolvedTheme = "light" | "dark";
+export type ThemeName =
+  | "default"
+  | "astro-vista"
+  | "claude"
+  | "light-green"
+  | "mono"
+  | "neobrutualism"
+  | "notebook"
+  | "supabase"
+  | "vercel"
+  | "whatsapp"
+  | "zen";
 
-/** Duration must match --theme-transition-duration in globals.css */
-const TRANSITION_DURATION_MS = 320;
+export type Mode = "light" | "dark";
 
 export type ToggleOrigin = { x: number; y: number };
 
-type AppThemeContextValue = {
-  theme: Theme;
-  resolvedTheme: ResolvedTheme;
+type ThemeContextValue = {
+  theme: ThemeName;
+  mode: Mode;
   isDark: boolean;
-  setTheme: (nextTheme: Theme) => void;
-  toggleTheme: (origin?: ToggleOrigin) => void;
+  setTheme: (theme: ThemeName) => void;
+  setMode: (mode: Mode) => void;
+  toggleMode: (origin?: ToggleOrigin) => void;
 };
 
+const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+const DEFAULT_THEME: ThemeName = "default";
+const DEFAULT_MODE: Mode = "light";
+const TRANSITION_MS = 320;
+
+const STORAGE_THEME_KEY = "thinkit-theme";
+const STORAGE_MODE_KEY = "thinkit-mode";
+
+function applyToDOM(theme: ThemeName, mode: Mode) {
+  const root = document.documentElement;
+  root.setAttribute("data-theme", theme);
+  root.setAttribute("data-mode", mode);
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Remove the no-transition guard after first paint so hydration never flashes
+  const [theme, setThemeState] = useState<ThemeName>(DEFAULT_THEME);
+  const [mode, setModeState] = useState<Mode>(DEFAULT_MODE);
+
+  // On mount: read from localStorage, apply to DOM, remove no-theme-init guard
   useEffect(() => {
-    const root = document.documentElement;
-    // Small rAF delay ensures the browser has painted before we allow transitions
+    const savedTheme =
+      (localStorage.getItem(STORAGE_THEME_KEY) as ThemeName) ?? DEFAULT_THEME;
+    const savedMode =
+      (localStorage.getItem(STORAGE_MODE_KEY) as Mode) ?? DEFAULT_MODE;
+
+    setThemeState(savedTheme);
+    setModeState(savedMode);
+    applyToDOM(savedTheme, savedMode);
+
     const raf = requestAnimationFrame(() => {
-      root.classList.remove("no-theme-init");
+      document.documentElement.classList.remove("no-theme-init");
     });
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  return (
-    <NextThemesProvider
-      attribute="class"
-      defaultTheme="light"
-      enableSystem={false}
-      storageKey="thinkit-theme"
-      disableTransitionOnChange
-    >
-      {children}
-    </NextThemesProvider>
+  /** Change theme — mode stays the same */
+  const setTheme = useCallback(
+    (next: ThemeName) => {
+      setThemeState(next);
+      localStorage.setItem(STORAGE_THEME_KEY, next);
+      applyToDOM(next, mode);
+    },
+    [mode],
   );
-}
 
-export function useTheme() {
-  const { theme, resolvedTheme, setTheme } = useNextTheme();
-  const currentTheme = (theme ?? "light") as Theme;
-  const currentResolved = (resolvedTheme ?? theme ?? "light") as ResolvedTheme;
+  /** Change mode — theme stays the same */
+  const setMode = useCallback(
+    (next: Mode) => {
+      setModeState(next);
+      localStorage.setItem(STORAGE_MODE_KEY, next);
+      applyToDOM(theme, next);
+    },
+    [theme],
+  );
 
-  /**
-   * Perform a theme switch with a circular ripple that expands
-   * from `origin` (button centre in viewport px).
-   * Falls back to an instant switch on browsers without View Transition API.
-   */
-  const toggleTheme = useCallback(
+  /** Toggle light↔dark with circular ripple View Transition */
+  const toggleMode = useCallback(
     (origin?: ToggleOrigin) => {
-      const nextTheme: Theme = currentResolved === "dark" ? "light" : "dark";
+      const nextMode: Mode = mode === "dark" ? "light" : "dark";
 
       if (typeof document === "undefined") {
-        setTheme(nextTheme);
+        setMode(nextMode);
         return;
       }
 
       const prefersReduced = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
+        "(prefers-reduced-motion: reduce)",
       ).matches;
 
-      // ── Fallback: CSS global transition via theme-transitioning class ──
       if (!document.startViewTransition || prefersReduced) {
         if (!prefersReduced) {
-          const root = document.documentElement;
-          root.classList.add("theme-transitioning");
-          setTheme(nextTheme);
-          setTimeout(() => root.classList.remove("theme-transitioning"), TRANSITION_DURATION_MS);
+          document.documentElement.classList.add("theme-transitioning");
+          setMode(nextMode);
+          setTimeout(
+            () =>
+              document.documentElement.classList.remove("theme-transitioning"),
+            TRANSITION_MS,
+          );
         } else {
-          setTheme(nextTheme);
+          setMode(nextMode);
         }
         return;
       }
 
-      // Capture origin point (default: centre of viewport)
       const cx = origin?.x ?? window.innerWidth / 2;
       const cy = origin?.y ?? window.innerHeight / 2;
-
-      // Largest possible radius: corner furthest from origin
       const dx = Math.max(cx, window.innerWidth - cx);
       const dy = Math.max(cy, window.innerHeight - cy);
       const maxRadius = Math.ceil(Math.hypot(dx, dy));
 
-      // Expose CSS custom properties used by the ::view-transition rules
       document.documentElement.style.setProperty("--vt-cx", `${cx}px`);
       document.documentElement.style.setProperty("--vt-cy", `${cy}px`);
       document.documentElement.style.setProperty("--vt-r", `${maxRadius}px`);
 
       const transition = document.startViewTransition(() => {
-        setTheme(nextTheme);
+        setMode(nextMode);
       });
 
-      // Clean up custom props once the animation finishes
       transition.finished.finally(() => {
         document.documentElement.style.removeProperty("--vt-cx");
         document.documentElement.style.removeProperty("--vt-cy");
         document.documentElement.style.removeProperty("--vt-r");
       });
     },
-    [currentResolved, setTheme],
+    [mode, setMode],
   );
 
-  const setAnimatedTheme = useCallback(
-    (nextTheme: Theme) => {
-      if (
-        typeof document === "undefined" ||
-        !document.startViewTransition ||
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ) {
-        setTheme(nextTheme);
-        return;
-      }
-      document.startViewTransition(() => setTheme(nextTheme));
-    },
-    [setTheme],
+  return (
+    <ThemeContext.Provider
+      value={{ theme, mode, isDark: mode === "dark", setTheme, setMode, toggleMode }}
+    >
+      {children}
+    </ThemeContext.Provider>
   );
+}
 
-  return {
-    theme: currentTheme,
-    resolvedTheme: currentResolved,
-    isDark: currentResolved === "dark",
-    setTheme: setAnimatedTheme,
-    toggleTheme,
-  } as AppThemeContextValue;
+export function useTheme(): ThemeContextValue {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be used inside ThemeProvider");
+  return ctx;
 }

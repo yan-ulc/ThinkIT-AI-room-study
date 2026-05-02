@@ -1,5 +1,6 @@
 "use client";
 
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { api } from "@/convex/_generated/api";
@@ -40,7 +41,10 @@ export function Sidebar() {
             <span className="h-1.5 w-1.5 rounded-full bg-primary opacity-90" />
             <span className="tracking-[-0.01em]">ThinkIT</span>
           </div>
-          <ThemeToggle className="relative flex h-7 w-7 items-center justify-center rounded-md text-text-3 transition-colors duration-300 hover:bg-muted hover:text-text-2" />
+          <div className="flex items-center gap-1">
+            <ThemeToggle className="relative flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground" />
+            <ThemeSwitcher className="relative flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground" />
+          </div>
         </div>
       </div>
 

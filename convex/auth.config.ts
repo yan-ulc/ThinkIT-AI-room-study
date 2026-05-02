@@ -1,7 +1,10 @@
+const domain = process.env.CLERK_JWT_ISSUER_DOMAIN;
 const authConfig = {
   providers: [
     {
-      domain: process.env.CLERK_JWT_ISSUER_DOMAIN || "https://charming-wildcat-89.clerk.accounts.dev",
+      domain: (domain && domain.startsWith("http")) 
+        ? domain 
+        : "https://charming-wildcat-89.clerk.accounts.dev",
       applicationID: "convex",
     },
   ],
