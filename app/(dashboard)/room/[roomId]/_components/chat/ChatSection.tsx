@@ -28,6 +28,8 @@ type ChatSectionProps = {
   selectionContext: DocumentContext;
   onClearSelectionContext: () => void;
   onCancelSelectionContext: () => void;
+  isGeneratingQuiz?: boolean;
+  onToggleRightPanel?: () => void;
 };
 
 export function ChatSection({
@@ -41,6 +43,8 @@ export function ChatSection({
   selectionContext,
   onClearSelectionContext,
   onCancelSelectionContext,
+  isGeneratingQuiz,
+  onToggleRightPanel,
 }: ChatSectionProps) {
   const {
     replyingTo,
@@ -63,11 +67,11 @@ export function ChatSection({
 
   return (
     <section className="relative flex min-h-0 flex-1 flex-col border-r border-border/70 bg-transparent">
-      <ChatHeader roomName={roomName} members={members} />
+      <ChatHeader roomName={roomName} members={members} onToggleRightPanel={onToggleRightPanel} />
 
       <MessageList
         messages={messages}
-        isAiThinking={isAiThinking}
+        isAiThinking={isAiThinking || !!isGeneratingQuiz}
         streamingAiId={streamingAiId}
         getDisplayedMessageContent={getDisplayedMessageContent}
         shouldHidePendingAiMessage={shouldHidePendingAiMessage}

@@ -8,6 +8,7 @@ import type {
   RoomDocument,
   RoomMember,
 } from "../../hooks/useRoomData";
+import { cn } from "@/lib/utils";
 import { DocumentsTab } from "./DocumentsTab";
 import { MembersTab } from "./MembersTab";
 
@@ -51,7 +52,9 @@ export function RightPanel({
   generatingQuizForDocId,
   onGenerateQuiz,
   isUploading,
-}: RightPanelProps) {
+  isOpen,
+  onClose,
+}: RightPanelProps & { isOpen?: boolean; onClose?: () => void }) {
   const tabs = [
     {
       id: "documents" as const,
@@ -74,7 +77,21 @@ export function RightPanel({
   ];
 
   return (
-    <div className="glass-panel w-80 shrink-0 flex flex-col border-l border-border/70">
+    <>
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-140 bg-black/40 backdrop-blur-sm md:hidden transition-opacity duration-300"
+          onClick={onClose}
+        />
+      )}
+
+      <div 
+        className={cn(
+          "fixed inset-y-0 right-0 z-150 flex w-[300px] flex-col border-l border-border/70 bg-card/95 backdrop-blur-xl transition-transform duration-300 ease-in-out md:static md:flex md:w-80 md:translate-x-0 md:z-0 md:bg-transparent md:backdrop-blur-none",
+          isOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
       {/* Tab bar */}
       <div className="flex shrink-0 border-b border-border/80 bg-card/45">
         {tabs.map((tab) => {
@@ -137,6 +154,7 @@ export function RightPanel({
           />
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

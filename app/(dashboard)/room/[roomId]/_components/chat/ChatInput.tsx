@@ -72,7 +72,7 @@ export function ChatInput({
   return (
     <div className="relative z-10 shrink-0 bg-transparent px-4 pb-5 pt-2">
       <div className="mx-auto w-full max-w-4xl">
-        <div className="mx-auto w-full max-w-2xl">
+        <div className="mx-auto w-full md:max-w-2xl px-2 md:px-0">
           {/* Document context strip */}
           {selectionContext && (
             <div className="glass-panel mb-1 flex items-start gap-3 rounded-xl px-4 py-2.5">

@@ -72,7 +72,7 @@ export function useAiStreaming(messages: RoomMessage[] | undefined) {
     const text = incomingAi.content;
 
     // ⚡ ultra fast start (hampir instant)
-    const delayMs = Math.min(250, text.length * 5);
+    const delayMs = Math.min(60, text.length * 2);
 
     delayTimeoutRef.current = window.setTimeout(() => {
       setIsAiThinking(false);
@@ -95,8 +95,8 @@ export function useAiStreaming(messages: RoomMessage[] | undefined) {
       const step = () => {
         const progress = index / totalLength;
 
-        // ⚡ dynamic speed (cepat di awal, smooth di akhir)
-        const dynamicSpeed = 2 + 6 * (1 - progress);
+        // ⚡ dynamic speed (sangat cepat di awal, smooth di akhir)
+        const dynamicSpeed = 10 + 25 * (1 - progress);
 
         index += dynamicSpeed;
 

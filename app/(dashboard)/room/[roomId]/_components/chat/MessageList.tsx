@@ -37,7 +37,7 @@ export function MessageList({
     <div
       ref={scrollRef}
       onScroll={onScroll}
-      className="no-scrollbar min-h-0 flex-1 overflow-y-auto bg-transparent"
+      className="no-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-transparent"
     >
       <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-7">
         <div className="mx-auto w-full max-w-2xl pb-2">

@@ -12,7 +12,7 @@ import DocsAsk from "@/components/DocsAsk";
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
-  :root {
+  html:root[data-theme][data-mode] {
     --bg: #080b12;
     --bg-2: #0d1220;
     --bg-3: #111827;
@@ -35,6 +35,21 @@ const styles = `
     --radius: 16px;
     --font-display: 'Bricolage Grotesque', sans-serif;
     --font-mono: 'DM Mono', monospace;
+
+    /* Lock standard variables to prevent theme leakage */
+    --background: var(--bg);
+    --foreground: var(--text);
+    --primary: var(--accent);
+    --primary-foreground: #0a0a0a;
+    --secondary: var(--bg-2);
+    --muted: var(--text-dim);
+    --muted-foreground: var(--text-muted);
+    --card: var(--bg-2);
+    --card-foreground: var(--text);
+    --popover: var(--bg-2);
+    --popover-foreground: var(--text);
+    --input: var(--border);
+    --ring: var(--accent);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }

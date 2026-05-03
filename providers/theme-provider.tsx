@@ -7,6 +7,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
 
 export type ThemeName =
   | "default"
@@ -53,6 +54,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeName>(DEFAULT_THEME);
   const [mode, setModeState] = useState<Mode>(DEFAULT_MODE);
 
+  const pathname = usePathname();
+
   // On mount: read from localStorage, apply to DOM, remove no-theme-init guard
   useEffect(() => {
     const savedTheme =
@@ -62,37 +65,46 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     setThemeState(savedTheme);
     setModeState(savedMode);
-    applyToDOM(savedTheme, savedMode);
+    
+    // Initial application logic handles the landing page route
+    if (pathname === "/") {
+      applyToDOM("astro-vista", "light");
+    } else {
+      applyToDOM(savedTheme, savedMode);
+    }
 
     const raf = requestAnimationFrame(() => {
       document.documentElement.classList.remove("no-theme-init");
     });
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [pathname]);
 
   /** Change theme — mode stays the same */
   const setTheme = useCallback(
     (next: ThemeName) => {
+      if (pathname === "/") return;
       setThemeState(next);
       localStorage.setItem(STORAGE_THEME_KEY, next);
       applyToDOM(next, mode);
     },
-    [mode],
+    [mode, pathname],
   );
 
   /** Change mode — theme stays the same */
   const setMode = useCallback(
     (next: Mode) => {
+      if (pathname === "/") return;
       setModeState(next);
       localStorage.setItem(STORAGE_MODE_KEY, next);
       applyToDOM(theme, next);
     },
-    [theme],
+    [theme, pathname],
   );
 
   /** Toggle light↔dark with circular ripple View Transition */
   const toggleMode = useCallback(
     (origin?: ToggleOrigin) => {
+      if (pathname === "/") return;
       const nextMode: Mode = mode === "dark" ? "light" : "dark";
 
       if (typeof document === "undefined") {

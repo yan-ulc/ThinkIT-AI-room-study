@@ -114,7 +114,7 @@ export function QuizModal({ quizId, isOpen, onClose }: QuizModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       {/* bg-card + border-border: theme-aware. rounded-2xl overrides shadcn default rounded-lg */}
-      <DialogContent className="sm:max-w-[440px] rounded-2xl border-border bg-card p-0 shadow-2xl overflow-hidden">
+      <DialogContent className="w-full sm:max-w-[440px] rounded-2xl border-border bg-card p-0 shadow-2xl overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>{quiz?.title || "Quiz"}</DialogTitle>
           <DialogDescription>

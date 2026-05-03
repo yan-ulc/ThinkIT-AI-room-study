@@ -226,7 +226,7 @@ export function DocumentPreview({
             )}
           </div>
         ) : (
-          <article className="mx-auto w-full max-w-3xl rounded-2xl border border-border bg-card px-8 py-8 font-serif text-[15px] leading-[1.85] text-foreground shadow-sm">
+          <article className="mx-auto w-full max-w-3xl rounded-2xl border border-border bg-card px-4 md:px-8 py-4 md:py-8 font-serif text-[15px] leading-[1.85] text-foreground shadow-sm">
             {doc.content || (
               <span className="italic text-muted-foreground">
                 No preview text available for this document.
@@ -241,7 +241,7 @@ export function DocumentPreview({
         <aside
           role="complementary"
           aria-label="Ask AI about selection"
-          className="fixed bottom-6 right-6 z-50 flex w-76 flex-col gap-2
+          className="fixed bottom-4 md:bottom-6 right-4 md:right-6 left-4 md:left-auto z-50 flex w-auto md:w-76 flex-col gap-2
             animate-in fade-in slide-in-from-bottom-3 duration-200"
         >
           {/* Validation warnings */}

@@ -1,4 +1,5 @@
-"use client";
+import { Button } from "@/components/ui/button";
+import { PanelRightOpen } from "lucide-react";
 
 type ChatHeaderProps = {
   roomName: string;
@@ -7,14 +8,15 @@ type ChatHeaderProps = {
     displayName: string;
     imageUrl?: string;
   }>;
+  onToggleRightPanel?: () => void;
 };
 
-export function ChatHeader({ roomName, members = [] }: ChatHeaderProps) {
+export function ChatHeader({ roomName, members = [], onToggleRightPanel }: ChatHeaderProps) {
   const onlineMembers = members.slice(0, 3);
   const remainingCount = Math.max(0, members.length - onlineMembers.length);
 
   return (
-    <header className="glass-panel shrink-0 border-b border-border/60 px-5 py-3.5 rounded-b-xl" >
+    <header className="glass-panel shrink-0 border-b border-border/60 px-3 md:px-6 py-3 md:py-4 rounded-b-xl" >
      <div className="flex items-center justify-between">
   {/* LEFT */}
   <div className="flex items-center gap-3">
@@ -52,6 +54,16 @@ export function ChatHeader({ roomName, members = [] }: ChatHeaderProps) {
         </div>
       ))}
     </div>
+
+    {/* TOGGLE RIGHT PANEL (Mobile only) */}
+    <Button
+      variant="ghost"
+      size="icon"
+      className="md:hidden h-8 w-8 text-text-3"
+      onClick={onToggleRightPanel}
+    >
+      <PanelRightOpen size={18} />
+    </Button>
 
   </div>
 </div>

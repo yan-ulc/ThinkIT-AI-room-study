@@ -106,7 +106,7 @@ export default function DashboardPage() {
   return (
     <div className="h-full w-full flex-1 min-w-0 overflow-y-auto bg-surface2/40 dark:bg-[radial-gradient(1200px_520px_at_16%_-8%,rgba(250,204,21,0.14),transparent_60%),radial-gradient(1000px_520px_at_88%_0%,rgba(56,189,248,0.12),transparent_58%)]">
       {/* ── Page header ── */}
-      <div className="border-b border-border bg-surface/95 px-6 py-6 backdrop-blur-sm dark:border-white/15 dark:bg-surface/75 md:px-10">
+      <div className="border-b border-border bg-surface/95 px-4 md:px-10 py-4 md:py-8 backdrop-blur-sm dark:border-white/15 dark:bg-surface/75">
         <div className="mx-auto max-w-5xl">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
