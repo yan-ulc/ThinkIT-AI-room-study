@@ -14,10 +14,10 @@ export function ThinkingIndicator() {
       </div>
 
       {/* Dots */}
-      <div className="bubble-ai flex items-center gap-1.5 rounded-2xl rounded-tl-md px-4 py-3">
-        <span className="dot-bounce h-1.5 w-1.5 rounded-full bg-text-3" />
-        <span className="dot-bounce h-1.5 w-1.5 rounded-full bg-text-3" />
-        <span className="dot-bounce h-1.5 w-1.5 rounded-full bg-text-3" />
+      <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-md bg-muted px-4 py-3 border border-border/50 shadow-sm">
+        <span className="dot-bounce h-1.5 w-1.5 rounded-full bg-foreground/40" />
+        <span className="dot-bounce h-1.5 w-1.5 rounded-full bg-foreground/40" />
+        <span className="dot-bounce h-1.5 w-1.5 rounded-full bg-foreground/40" />
       </div>
     </div>
   );

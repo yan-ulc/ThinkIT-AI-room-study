@@ -114,7 +114,7 @@ export function MessageItem({
         <div className="w-7 shrink-0" />
 
         <div
-          className={`group relative flex max-w-[72%] items-end gap-2 ${isMine ? "flex-row" : "flex-row-reverse"}`}
+          className={`group relative flex max-w-[85%] md:max-w-[72%] items-end gap-2 break-words ${isMine ? "flex-row" : "flex-row-reverse"}`}
         >
           {/* Reply button */}
           <button

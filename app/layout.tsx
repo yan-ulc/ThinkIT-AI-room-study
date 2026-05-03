@@ -23,8 +23,9 @@ export default function RootLayout({
   var root = document.documentElement;
   root.classList.add('no-theme-init');
   try {
-    var t = localStorage.getItem('thinkit-theme') || 'astro-vista';
-    var m = localStorage.getItem('thinkit-mode') || 'light';
+    var isLanding = window.location.pathname === '/';
+    var t = isLanding ? 'astro-vista' : (localStorage.getItem('thinkit-theme') || 'astro-vista');
+    var m = isLanding ? 'light' : (localStorage.getItem('thinkit-mode') || 'light');
     root.setAttribute('data-theme', t);
     root.setAttribute('data-mode', m);
   } catch(e) {

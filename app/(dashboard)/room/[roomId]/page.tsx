@@ -5,6 +5,7 @@ import { ChatRoomSkeleton } from "./_components/chat/ChatRoomSkeleton";
 import { ChatSection } from "./_components/chat/ChatSection";
 import { RightPanel } from "./_components/right-panel/RightPanel";
 import { useRoomData } from "./hooks/useRoomData";
+import { useState } from "react";
 
 export default function RoomPage() {
   const {
@@ -30,6 +31,8 @@ export default function RoomPage() {
     isUploading,
   } = useRoomData();
 
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
+
   if (!room || messages === undefined) {
     return <ChatRoomSkeleton />;
   }
@@ -39,7 +42,7 @@ export default function RoomPage() {
 
   return (
     <>
-      <div className="chat-ambient relative flex flex-1 overflow-hidden">
+      <div className="chat-ambient relative flex flex-1 flex-col md:flex-row overflow-hidden">
         <div className="pointer-events-none absolute inset-0 opacity-70" />
         <ChatSection
           roomId={roomId}
@@ -52,6 +55,8 @@ export default function RoomPage() {
           selectionContext={documentContext}
           onClearSelectionContext={clearDocumentContext}
           onCancelSelectionContext={cancelDocumentContext}
+          isGeneratingQuiz={!!generatingQuizForDocId}
+          onToggleRightPanel={() => setIsRightPanelOpen(!isRightPanelOpen)}
         />
 
         <RightPanel
@@ -69,6 +74,8 @@ export default function RoomPage() {
           generatingQuizForDocId={generatingQuizForDocId}
           onGenerateQuiz={handleGenerateQuiz}
           isUploading={isUploading}
+          isOpen={isRightPanelOpen}
+          onClose={() => setIsRightPanelOpen(false)}
         />
       </div>
 
