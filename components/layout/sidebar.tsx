@@ -3,6 +3,7 @@
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { UsageMonitor } from "@/components/sidebar/usage-monitor";
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
 import { useUser } from "@clerk/nextjs";
@@ -188,6 +189,9 @@ export function Sidebar({
 
       {/* Divider */}
       <div className="mx-3 border-t border-border/60 dark:border-white/15" />
+
+      {/* Usage Monitor — positioned above user card */}
+      <UsageMonitor minimized={min} />
 
       {/* User card */}
       <div className={cn("p-3", min && "lg:p-2")}>

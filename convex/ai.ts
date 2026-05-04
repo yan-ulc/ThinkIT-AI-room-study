@@ -60,7 +60,8 @@ export const chatWithAi = internalAction({
   args: {
     roomId: v.id("rooms"),
     message: v.string(),
-    replyToId: v.optional(v.id("messages")), // Optional ID pesan yang di-reply
+    userId: v.string(), // tokenIdentifier — passed explicitly since scheduled actions have no auth context
+    replyToId: v.optional(v.id("messages")),
     selectionId: v.optional(v.id("documentSelections")),
   },
   handler: async (ctx, args) => {
@@ -254,6 +255,12 @@ ${context || "No retrieval context."}${replyContext}`,
     await ctx.runMutation(internal.ai.storeAiMessage, {
       roomId: args.roomId,
       content: responseText,
+    });
+
+    // --- 6. LOG USAGE (after success) ---
+    await ctx.runMutation(internal.rateLimit.logUsage, {
+      roomId: args.roomId,
+      userId: args.userId,
     });
   },
 });

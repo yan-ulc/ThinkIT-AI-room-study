@@ -15,6 +15,7 @@ import type * as migrateOwner from "../migrateOwner.js";
 import type * as quiz from "../quiz.js";
 import type * as rag from "../rag.js";
 import type * as rag_node from "../rag_node.js";
+import type * as rateLimit from "../rateLimit.js";
 import type * as rooms from "../rooms.js";
 import type * as summarize from "../summarize.js";
 import type * as users from "../users.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   quiz: typeof quiz;
   rag: typeof rag;
   rag_node: typeof rag_node;
+  rateLimit: typeof rateLimit;
   rooms: typeof rooms;
   summarize: typeof summarize;
   users: typeof users;

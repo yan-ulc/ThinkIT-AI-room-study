@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { Doc, Id } from "./_generated/dataModel";
 import { action, mutation, query } from "./_generated/server";
 import { callAI } from "./utils";
@@ -310,6 +310,14 @@ export const generate = action({
       quizId: quizId,
       title: quizTitle,
     });
+
+    // 7. ── Increment daily quiz counter ──
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity) {
+      await ctx.runMutation(internal.rateLimit.incrementQuizCount, {
+        userId: identity.subject,
+      });
+    }
 
     return { quizId, title: quizTitle };
   },

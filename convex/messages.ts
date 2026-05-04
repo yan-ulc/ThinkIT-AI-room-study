@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { internalQuery, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { assertRateLimits } from "./rateLimit";
 
 // STEP 3.1 & 3.2 — Send & Save Message
 // convex/messages.ts
@@ -127,9 +128,13 @@ export const send = mutation({
     }
 
     if (hasAiMention) {
+      // ── RATE LIMIT CHECK ── throws ConvexError if any limit exceeded
+      await assertRateLimits(ctx, args.roomId);
+
       await ctx.scheduler.runAfter(0, internal.ai.chatWithAi, {
         roomId: args.roomId,
         message: args.content,
+        userId: identity.tokenIdentifier, // forwarded explicitly — scheduled actions have no auth context
         replyToId: validatedReplyToId,
         selectionId: validatedSelectionId,
       });
