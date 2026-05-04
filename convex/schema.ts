@@ -8,6 +8,10 @@ export default defineSchema({
     username: v.string(),
     displayName: v.string(),
     imageUrl: v.optional(v.string()),
+    // Rate limiting fields
+    uploadCount: v.optional(v.number()),
+    quizCount: v.optional(v.number()),
+    lastResetTimestamp: v.optional(v.number()),
   })
     .index("by_clerkId", ["clerkId"])
     .index("by_username", ["username"]),
@@ -134,4 +138,16 @@ export default defineSchema({
     createdAt: v.number(), // Buat liat history progress
   }).index("by_quizId", ["quizId"])
     .index("by_userId", ["userId"]),
+
+  // 8. USAGE LOGS — AI Rate Limiting
+  usageLogs: defineTable({
+    userId: v.string(),           // Clerk tokenIdentifier
+    roomId: v.id("rooms"),
+    type: v.literal("ai_call"),
+    timestamp: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_roomId", ["roomId"])
+    .index("by_userId_and_timestamp", ["userId", "timestamp"])
+    .index("by_roomId_and_timestamp", ["roomId", "timestamp"]),
 });

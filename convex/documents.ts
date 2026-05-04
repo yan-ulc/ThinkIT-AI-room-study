@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { internalQuery, mutation, query } from "./_generated/server";
 
 const MIN_SELECTION_LENGTH = 10;
@@ -70,6 +70,11 @@ export const create = mutation({
       documentId: docId,
       fileUrl: fileUrl,
       roomId: args.roomId,
+    });
+
+    // ── Increment daily upload counter ──
+    await ctx.scheduler.runAfter(0, internal.rateLimit.incrementUploadCount, {
+      userId: identity.subject,
     });
 
     return docId;

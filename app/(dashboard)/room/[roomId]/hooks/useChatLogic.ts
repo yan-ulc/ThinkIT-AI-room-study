@@ -5,6 +5,7 @@ import { Doc, Id } from "@/convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export type DocContext = {
   docId: string;
@@ -69,7 +70,10 @@ export function useChatLogic(roomId: Id<"rooms">) {
     } catch (err) {
       console.error("Failed to send message:", err);
       setIsAiThinking(false);
-      console.error("Gagal mengirim pesan");
+      // Surface ConvexError messages (e.g. rate limit) as toasts
+      const message =
+        err instanceof Error ? err.message : "Gagal mengirim pesan";
+      toast.error(message, { duration: 5000 });
     }
   };
 
